@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+<title>Renueva TI · Prototipo navegable E3 (datos simulados)</title>
+<style>
+:root{--navy:#00102E;--cyan:#2DCAE3;--viol:#5851B6;--blue:#2278C2;--gray:#5A6475;--line:#C7D0DC;--light:#E9F1FA;--red:#B4442F;--ok:#1E7B4F}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Open Sans',system-ui,sans-serif;color:var(--navy);background:#F3F6FA;font-size:16px}
+h1,h2,h3,.t{font-family:'Montserrat','Open Sans',sans-serif}
+header.top{background:var(--navy);color:#fff;padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header.top b{font-family:'Montserrat',sans-serif;font-size:18px;letter-spacing:.3px}
+header.top b span{color:var(--cyan)}
+header.top small{color:#B9C6DA}
+nav.roles{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav.roles button{background:transparent;border:1px solid #3a4a68;color:#DDE6F4;padding:8px 14px;border-radius:20px;cursor:pointer;font:600 13px 'Open Sans'}
+nav.roles button.on{background:var(--cyan);color:var(--navy);border-color:var(--cyan)}
+.note{background:#FFF8D6;border-bottom:1px solid #E6D88A;padding:8px 20px;font-size:13px;color:#5b4a00}
+main{padding:22px;display:flex;justify-content:center}
+.phone{width:360px;height:700px;background:#fff;border:10px solid #111a2e;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.phone .bar{background:var(--navy);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.phone .bar b{font-family:'Montserrat';font-size:14px}
+.pill{border-radius:14px;padding:4px 10px;font:700 12px 'Open Sans';border:0;cursor:pointer}
+.pill.on{background:#D6F3E4;color:var(--ok)} .pill.off{background:#FDECE8;color:var(--red)}
+.body{padding:18px 16px;flex:1;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.card.hl{background:var(--light);border-color:#B7CDE6}
+h2{font-size:19px;margin:0 0 2px;line-height:1.25} h3{font-size:15px;margin:0 0 6px}
+p{margin:0;line-height:1.45} .mut{color:var(--gray);font-size:14px}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:14px 16px;font:700 16px 'Open Sans';cursor:pointer;width:100%}
+.btn.sec{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.btn.ok{background:var(--ok)} .btn.warn{background:var(--red)}
+.btn.sm{width:auto;padding:8px 14px;font-size:14px}
+label{font-weight:600;font-size:15px;display:block;margin-bottom:6px}
+input[type=text],select,textarea{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;font:16px 'Open Sans'}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:15px;cursor:pointer}
+.opt input{margin-top:3px;width:18px;height:18px}
+.prog{height:8px;background:var(--light);border-radius:6px;overflow:hidden}.prog i{display:block;height:100%;background:var(--cyan)}
+.badge{display:inline-block;border-radius:12px;padding:3px 10px;font:700 12px 'Open Sans'}
+.b-ok{background:#D6F3E4;color:var(--ok)}.b-wait{background:#FFF1C9;color:#7A5B00}.b-bad{background:#FDECE8;color:var(--red)}.b-info{background:#DCEBFA;color:var(--blue)}
+.msg{border-radius:12px;padding:14px;font-size:15px;line-height:1.45}
+.msg.ok{background:#E3F6EC;border:1px solid #9AD6B5}.msg.local{background:#FFF8D6;border:1px solid #E6D88A}.msg.err{background:#FDECE8;border:1px solid #E8B1A6}
+.big{font:700 26px 'Montserrat';letter-spacing:1px}
+.toast{position:absolute;left:12px;right:12px;bottom:14px;background:var(--navy);color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;display:none}
+.desk{width:1000px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.desk .bar{background:var(--navy);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.desk .bar b{font-family:'Montserrat'} .desk .body{padding:22px}
+.row{display:flex;gap:14px}.row>*{flex:1}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--navy);color:#fff;text-align:left;padding:9px 10px;font-weight:600}
+td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--light)}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.kpi b{display:block;font:700 26px 'Montserrat'}
+.qrbox{border:2px solid var(--navy);border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff}
+canvas{image-rendering:pixelated}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font:600 14px 'Open Sans'}.tabs button.on{background:var(--navy);color:#fff}
+pre{background:#0b1730;color:#D3F1F7;border-radius:10px;padding:12px;font:12px 'Fira Code',monospace;overflow:auto;margin:0}
+[data-screen]{display:none}[data-screen].on{display:flex}
+.group{display:none}.group.on{display:block}
+/* wireframe de baja fidelidad */
+body.wf{background:#fff;filter:grayscale(1)}
+body.wf *{box-shadow:none!important}
+body.wf .bar,body.wf header.top{background:#d9d9d9!important;color:#222!important}
+body.wf .btn{background:#bdbdbd!important;color:#111!important;border:2px solid #555!important}
+body.wf .btn.sec{background:#fff!important}
+body.wf .card,body.wf .opt,body.wf input,body.wf select,body.wf .kpi{border:2px dashed #777!important;background:#fff!important}
+body.wf th{background:#999!important}
+body.wf .badge,body.wf .pill,body.wf .msg{background:#eee!important;color:#222!important;border:1px solid #888!important}
+body.wf .prog i{background:#888!important}
+</style>
+</head>
+<body>
+<header class="top">
+  <b>Renueva <span>TI</span></b><small>Prototipo navegable · E3 · Todos los datos son simulados</small>
+  <nav class="roles">
+    <button data-role="alumno" class="on">Alumno (celular)</button>
+    <button data-role="profesor">Profesor designado</button>
+    <button data-role="comite">Comité Académico</button>
+    <button data-role="se">Servicios Escolares</button>
+  </nav>
+</header>
+<div class="note">Demostración sin servidor: nada se guarda ni se envía. Usa el botón «En línea / Sin internet» del celular para ver cómo se comporta el registro sin conexión.</div>
+<main>
+
+<!-- ============ ALUMNO ============ -->
+<div class="group on" id="g-alumno">
+ <div class="phone" id="phone">
+  <div class="bar"><b>Renueva TI</b><button class="pill on" id="net" title="Simular conexión">● En línea</button></div>
+
+  <section class="body" data-screen="A1">
+   <div class="card hl"><span class="badge b-info">Conferencia de hoy</span>
+     <h2 style="margin-top:8px">Automatización de procesos con Python</h2>
+     <p class="mut">Auditorio · 11:00 a 12:30 h<br>Congreso Académico (simulado)</p></div>
+   <div class="card"><h3>Estado de la app</h3>
+     <p id="a1status" class="mut">✔ Los datos de la conferencia ya están en tu celular. Puedes registrarte aunque no haya señal.</p></div>
+   <button class="btn" data-go="A2">Comenzar mi registro</button>
+   <button class="btn sec" data-go="A5">Ver mi estado</button>
+  </section>
+
+  <section class="body" data-screen="A2">
+   <div><div class="prog"><i style="width:33%"></i></div><p class="mut" style="margin-top:6px">Paso 1 de 3 · Identifícate</p></div>
+   <h2>¿Cuál es tu número de control?</h2>
+   <div><label for="nc">Número de control</label><input type="text" id="nc" inputmode="numeric" placeholder="Ejemplo: 99660001" value="99660001"> <p class="mut" style="margin-top:8px">Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p><p id="nc-err" class="mut" style="color:#B4442F;display:none;margin-top:6px">No encontramos ese número. Revisa que tenga 8 dígitos y vuelve a intentarlo.</p></div>
+   <button class="btn" id="a2next">Continuar</button>
+   <button class="btn sec" data-go="A1">Volver</button>
+  </section>
+
+  <section class="body" data-screen="A3">
+   <div><div class="prog"><i style="width:66%"></i></div><p class="mut" style="margin-top:6px">Paso 2 de 3 · Cuestionario</p></div>
+   <h2>Cuéntanos qué aprendiste</h2>
+   <div id="qs"></div>
+   <button class="btn" id="a3send">Enviar mi registro</button>
+   <button class="btn sec" data-go="A2">Volver</button>
+  </section>
+
+  <section class="body" data-screen="A4a">
+   <div><div class="prog"><i style="width:100%"></i></div><p class="mut" style="margin-top:6px">Paso 3 de 3 · Listo</p></div>
+   <div class="msg ok"><h2>¡Registro recibido!</h2><p style="margin-top:6px">Tu folio es</p><p class="big">RT-26-00421</p><p class="mut">Hoy, 12:24 h · Te avisaremos por correo y WhatsApp cuando haya novedades.</p></div>
+   <button class="btn" data-go="A5">Ver mi estado</button>
+   <button class="btn sec" data-go="A1">Salir</button>
+  </section>
+
+  <section class="body" data-screen="A4b">
+   <div><div class="prog"><i style="width:100%"></i></div><p class="mut" style="margin-top:6px">Paso 3 de 3 · Guardado en tu celular</p></div>
+   <div class="msg local"><h2>Registro guardado localmente</h2><p style="margin-top:6px">Se enviará cuando haya conexión. No necesitas hacer nada más: la app lo enviará sola, incluso mañana.</p><p style="margin-top:8px"><span class="badge b-wait">1 pendiente de envío</span></p></div>
+   <p class="mut">Tip: prueba el botón «Sin internet» de arriba y vuelve a «En línea» para ver el envío automático.</p>
+   <button class="btn" data-go="A5">Ver mi estado</button>
+   <button class="btn sec" data-go="A1">Salir</button>
+  </section>
+
+  <section class="body" data-screen="A5">
+   <h2>Mi estado</h2>
+   <p class="mut">Tus registros y en qué paso va cada uno.</p>
+   <div id="a5list"></div>
+   <button class="btn sec" data-go="A1">Volver al inicio</button>
+  </section>
+  <div class="toast" id="toast"></div>
+ </div>
+</div>
+
+<!-- ============ PROFESOR ============ -->
+<div class="group" id="g-profesor">
+ <div class="desk">
+  <div class="bar"><b>Renueva TI · Panel del profesor</b><span id="pmode" class="badge b-ok">Modo en línea</span></div>
+  <div class="body">
+   <div class="row" style="align-items:stretch">
+    <div class="qrbox" style="max-width:300px"><h3>Muestra este QR</h3><canvas id="qr" width="200" height="200"></canvas><p class="mut" id="qrt">Cambia en 0:60</p><p class="mut" style="text-align:center">QR de ejemplo con vigencia de 1 minuto</p></div>
+    <div style="flex:1.6;display:flex;flex-direction:column;gap:12px">
+     <div class="card hl"><h3>Automatización de procesos con Python</h3><p class="mut">Auditorio · 11:00 a 12:30 h · Profesor designado: (nombre simulado)</p></div>
+     <div class="row"><div class="kpi"><b id="pk1">24</b><span class="mut">Registros recibidos</span></div><div class="kpi"><b id="pk2">0</b><span class="mut">Pendientes de sincronizar</span></div><div class="kpi"><b>11:42</b><span class="mut">Hora de la laptop</span></div></div>
+     <div class="tabs"><button class="on" data-pmode="on">Con internet</button><button data-pmode="off">Sin internet (red local)</button></div>
+     <p class="mut" id="pexp">Los alumnos escanean el QR y envían su registro directo al servidor central.</p>
+     <button class="btn sm" id="psync" style="align-self:flex-start">Terminar conferencia y sincronizar</button>
+    </div>
+   </div>
+   <div class="card"><h3>Si algo falla</h3><p class="mut">Con el botón de ayuda puedes registrar a un alumno que no pudo hacerlo por QR. Quedará marcado «asistido por profesor».</p></div>
+  </div>
+ </div>
+</div>
+
+<!-- ============ COMITÉ ============ -->
+<div class="group" id="g-comite">
+ <div class="desk">
+  <div class="bar"><b>Renueva TI · Comité Académico</b><span class="badge b-info">Congreso Académico 2026 (simulado)</span></div>
+  <div class="body">
+   <div class="tabs"><button class="on" data-ctab="C1">Conferencias</button><button data-ctab="C2">Tablero por carrera</button></div>
+
+   <section data-screen="C1" style="flex-direction:column;gap:12px">
+    <div class="card"><h3>Nueva conferencia</h3>
+     <div class="row"><div><label>Nombre</label><input type="text" value="Automatización de procesos con Python"></div><div><label>Fecha y horario</label><input type="text" value="17 nov · 11:00 a 12:30 h"></div></div>
+     <div class="row" style="margin-top:10px"><div><label>Créditos asignados (máx. 2)</label><input type="text" value="1"></div><div><label>Carreras participantes</label><input type="text" value="Sistemas, Civil, Industrial, Gestión, Conta"></div><div><label>Profesor designado</label><input type="text" value="Profesor Demo 03"></div></div>
+     <div style="margin-top:10px"><label>Cuestionario (preguntas y respuestas correctas)</label><input type="text" value="5 preguntas cargadas · mínimo de acierto: 50 %"></div>
+     <div class="row" style="margin-top:12px"><button class="btn sm" id="cgen">Guardar y generar QR</button><span id="cok" class="mut" style="align-self:center"></span></div>
+    </div>
+    <table><tr><th>Conferencia</th><th>Fecha</th><th>Estado</th></tr>
+     <tr><td>Innovación en energías limpias</td><td>16 nov</td><td><span class="badge b-ok">Cerrada</span></td></tr>
+     <tr><td>Automatización de procesos con Python</td><td>17 nov</td><td><span class="badge b-info">Activa</span></td></tr></table>
+   </section>
+
+   <section data-screen="C2" style="flex-direction:column;gap:12px">
+    <div class="row"><div class="kpi"><b>312</b><span class="mut">Registros recibidos</span></div><div class="kpi"><b>287</b><span class="mut">Válidos</span></div><div class="kpi"><b>25</b><span class="mut">No válidos (con motivo)</span></div></div>
+    <p class="mut">El sistema ya validó todo. Revisa el estado y, si todo está correcto, presiona «Enviar». Haz clic en una carrera para ver alumno por alumno.</p>
+    <table id="ctab"><tr><th>Carrera</th><th>Registros</th><th>Válidos</th><th>No válidos</th><th>Estado</th></tr></table>
+    <div class="row" style="align-items:center"><span id="cstat" class="mut"></span><button class="btn sm" id="csend" style="flex:0 0 auto">Enviar a Servicios Escolares</button></div>
+   </section>
+
+   <section data-screen="C3" style="flex-direction:column;gap:12px">
+    <button class="btn sec sm" data-ctab="C2" style="align-self:flex-start">← Volver al tablero</button>
+    <h3 id="c3t">Ing. en Sistemas Computacionales</h3>
+    <table id="c3tab"><tr><th>Alumno (simulado)</th><th>No. control</th><th>Conferencia</th><th>Aciertos</th><th>Tiempo</th><th>Resultado</th></tr></table>
+   </section>
+  </div>
+ </div>
+</div>
+
+<!-- ============ SERVICIOS ESCOLARES ============ -->
+<div class="group" id="g-se">
+ <div class="desk">
+  <div class="bar"><b>Renueva TI · Servicios Escolares</b><span class="badge b-info">Lote #2026-11-A</span></div>
+  <div class="body" style="display:flex;flex-direction:column;gap:14px">
+   <div class="card hl"><h3>Lote recibido del Comité Académico</h3><p class="mut">Enviado hoy · 287 registros válidos · 5 carreras</p></div>
+   <div class="row"><button class="btn sm" id="sdl">Descargar CSV para el SIIC</button><span id="sdlm" class="mut" style="align-self:center"></span></div>
+   <pre id="csvp">no_control,nombre,carrera,semestre,grupo,telefono,correo,conferencias_validas,cuestionario_completado,credito
+99660001,Alumno Demo 001,Sistemas,3,A,4880000001,L99660001@matehuala.tecnm.mx,3,SI,SI
+99660002,Alumno Demo 002,Civil,5,B,4880000002,L99660002@matehuala.tecnm.mx,2,SI,SI
+99660003,Alumno Demo 003,Industrial,1,A,4880000003,L99660003@matehuala.tecnm.mx,1,SI,NO</pre>
+   <div class="card"><h3>Después de cargarlo en el SIIC</h3>
+    <div class="row"><button class="btn ok sm" id="sok">Se cargó bien</button><button class="btn warn sm" id="sbad">Hubo una falla</button></div>
+    <p class="mut" id="sres" style="margin-top:10px">Al confirmar, el sistema avisa a los alumnos por WhatsApp y correo.</p></div>
+  </div>
+ </div>
+</div>
+
+</main>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let online=true,pending=0,regs=[{c:'Innovación en energías limpias',s:3}];
+const STATES=['Registro recibido','Validado por el sistema','Enviado a Servicios Escolares','Crédito cargado en el SIIC'];
+function showA(id){$$('#phone [data-screen]').forEach(e=>e.classList.toggle('on',e.dataset.screen===id));if(id==='A5')renderA5();if(id==='A1')renderA1();}
+function renderA1(){$('#a1status').textContent=online?'✔ Estás en línea y los datos de la conferencia ya están en tu celular.':'✔ Sin internet, pero los datos de la conferencia ya están en tu celular. Puedes registrarte.';}
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',3200);}
+function renderA5(){let h='';
+ if(pending)h+='<div class="card"><span class="badge b-wait">Pendiente de envío</span><h3 style="margin-top:8px">Automatización de procesos con Python</h3><p class="mut">Guardado en tu celular. Se enviará cuando haya conexión.</p></div>';
+ regs.forEach(r=>{h+='<div class="card"><span class="badge '+(r.s>=3?'b-ok':'b-info')+'">'+STATES[r.s]+'</span><h3 style="margin-top:8px">'+r.c+'</h3><div class="prog"><i style="width:'+((r.s+1)*25)+'%"></i></div></div>';});
+ $('#a5list').innerHTML=h;}
+$('#net').onclick=()=>{online=!online;const n=$('#net');n.className='pill '+(online?'on':'off');n.textContent=online?'● En línea':'● Sin internet';renderA1();
+ if(online&&pending){pending=0;regs.unshift({c:'Automatización de procesos con Python',s:0});toast('Conexión recuperada: tu registro se envió automáticamente.');const cur=$$('#phone [data-screen].on')[0].dataset.screen;if(cur==='A4b')showA('A4a');if(cur==='A5')renderA5();}};
+$$('[data-go]').forEach(b=>b.onclick=()=>showA(b.dataset.go));
+$('#a2next').onclick=()=>{const v=$('#nc').value.trim();if(!/^\d{8}$/.test(v)){$('#nc-err').style.display='block';return;}$('#nc-err').style.display='none';showA('A3');};
+const Q=[['¿Qué lenguaje se usó en la demostración principal?',['Python','Cobol','Pascal']],['¿Qué problema resolvía el ejemplo?',['Registrar asistencia','Imprimir diplomas','Reservar salas']],['¿Qué formato se usó para el archivo de salida?',['CSV','DOCX','MP3']],['¿Cuántas personas intervenían en el flujo automatizado?',['Menos que antes','Más que antes','Igual que antes']],['¿Qué herramienta se mencionó para las notificaciones?',['Un bot','Una carta','Un fax']]];
+$('#qs').innerHTML=Q.map((q,i)=>'<div style="margin-bottom:10px"><label>'+(i+1)+'. '+q[0]+'</label>'+q[1].map(o=>'<label class="opt" style="font-weight:400"><input type="radio" name="q'+i+'"> '+o+'</label>').join('')+'</div>').join('');
+$('#a3send').onclick=()=>{if(online){showA('A4a');regs.unshift({c:'Automatización de procesos con Python',s:0});}else{pending=1;showA('A4b');}};
+$$('[data-role]').forEach(b=>b.onclick=()=>{$$('[data-role]').forEach(x=>x.classList.toggle('on',x===b));$$('.group').forEach(g=>g.classList.toggle('on',g.id==='g-'+b.dataset.role));if(b.dataset.role==='comite')showC('C1');});
+// profesor
+function drawQR(seed){const c=$('#qr'),x=c.getContext('2d'),n=25,s=c.width/n;x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#00102E';let r=seed*9301+49297;const rnd=()=>{r=(r*9301+49297)%233280;return r/233280};
+ const fin=(a,b)=>{for(let i=0;i<7;i++)for(let j=0;j<7;j++){const e=i==0||j==0||i==6||j==6||(i>1&&i<5&&j>1&&j<5);if(e)x.fillRect((a+i)*s,(b+j)*s,s,s);}};
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++){const inF=(i<8&&j<8)||(i>16&&j<8)||(i<8&&j>16);if(!inF&&rnd()>.5)x.fillRect(i*s,j*s,s,s);}fin(0,0);fin(18,0);fin(0,18);}
+let slot=1,left=60;drawQR(slot);setInterval(()=>{left--;if(left<=0){left=60;slot++;drawQR(slot);}$('#qrt').textContent='Cambia en 0:'+String(left).padStart(2,'0');},1000);
+$$('[data-pmode]').forEach(b=>b.onclick=()=>{$$('[data-pmode]').forEach(x=>x.classList.toggle('on',x===b));const off=b.dataset.pmode==='off';$('#pmode').textContent=off?'Modo red local (sin internet)':'Modo en línea';$('#pexp').textContent=off?'La laptop crea su propia red Wi-Fi. Los alumnos escanean el QR, se conectan a ella y su registro queda en la laptop hasta que termines y sincronices.':'Los alumnos escanean el QR y envían su registro directo al servidor central.';$('#pk2').textContent=off?'24':'0';});
+$('#psync').onclick=()=>{$('#pk2').textContent='0';$('#pexp').textContent='✔ Sincronizado (simulado): 24 registros enviados al servidor central.';};
+// comité
+const CAR=[['Ing. en Sistemas Computacionales',84,79,5],['Ing. Civil',71,66,5],['Ing. Industrial',63,58,5],['Ing. en Gestión Empresarial',52,45,7],['Lic. en Contaduría',42,39,3]];
+$('#ctab').insertAdjacentHTML('beforeend',CAR.map((c,i)=>'<tr class="click" data-car="'+i+'"><td>'+c[0]+'</td><td>'+c[1]+'</td><td>'+c[2]+'</td><td>'+c[3]+'</td><td>'+(c[3]>5?'<span class="badge b-wait">Casos por revisar</span>':'<span class="badge b-ok">Listo para enviar</span>')+'</td></tr>').join(''));
+function showC(id){$$('.desk [data-screen]').forEach(e=>{if(e.closest('#g-comite'))e.classList.toggle('on',e.dataset.screen===id)});$$('[data-ctab]').forEach(b=>{if(!b.classList.contains('sec'))b.classList.toggle('on',b.dataset.ctab===id||(id==='C3'&&b.dataset.ctab==='C2'));});}
+$$('[data-ctab]').forEach(b=>b.onclick=()=>showC(b.dataset.ctab));
+$$('#ctab tr.click').forEach(r=>r.onclick=()=>{const c=CAR[r.dataset.car];$('#c3t').textContent=c[0];const F=['Alumno Demo 001','Alumno Demo 002','Alumno Demo 003','Alumno Demo 004','Alumno Demo 005'];let h='<tr><th>Alumno (simulado)</th><th>No. control</th><th>Conferencia</th><th>Aciertos</th><th>Tiempo</th><th>Resultado</th></tr>';
+ const d=[[80,'8:10','ok'],[100,'6:45','ok'],[40,'7:30','bad'],[60,'0:48','bad'],[100,'9:02','ok']];d.forEach((v,i)=>{const bad=v[2]==='bad';const motivo=v[0]<50?'Menos de 50 % de aciertos':'Respondió demasiado rápido';h+='<tr><td>'+F[i]+'</td><td>9966'+String(i+1).padStart(4,'0')+'</td><td>Automatización con Python</td><td>'+v[0]+' %</td><td>'+v[1]+' min</td><td><span class="badge '+(bad?'b-bad':'b-ok')+'">'+(bad?'No válido · '+motivo:'Válido')+'</span></td></tr>';});$('#c3tab').innerHTML=h;showC('C3');});
+$('#csend').onclick=()=>{$('#cstat').textContent='✔ Enviado a Servicios Escolares (lote #2026-11-A). Todo quedó en la bitácora.';};
+$('#cgen').onclick=()=>{$('#cok').textContent='✔ Conferencia guardada. QR firmado generado y paquete disponible para los celulares.';};
+// SE
+$('#sdl').onclick=()=>{$('#sdlm').textContent='✔ Archivo generado: congreso_2026_lote_A.csv (287 filas)';};
+$('#sok').onclick=()=>{$('#sres').textContent='✔ Carga confirmada. Se enviaron avisos por WhatsApp y correo a 287 alumnos.';};
+$('#sbad').onclick=()=>{$('#sres').textContent='⚠ Falla registrada. Los alumnos afectados recibieron un aviso con el motivo y el contacto del encargado del SIIC.';};
+showA('A1');showC('C1');renderA1();
+if(location.search.includes('wf'))document.body.classList.add('wf');
+</script>
+</body>
+</html>
