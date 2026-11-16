@@ -1,0 +1,36 @@
+{% extends "registro/base.html" %}
+{% block title %}Comité Académico{% endblock %}
+{% block bartitle %}Renueva TI · Comité Académico{% endblock %}
+{% block barright %}<span class="badge b-info">Congreso Académico (datos simulados)</span>{% endblock %}
+{% block content %}
+{% include "registro/_comite_tabs.html" %}
+<div class="card" style="margin-bottom:14px">
+ <h3>Nueva conferencia</h3>
+ <form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="msg err" style="margin-bottom:10px">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="row">
+   <div style="flex:2">{{ form.nombre.label_tag }}{{ form.nombre }}{{ form.nombre.errors }}</div>
+   <div>{{ form.lugar.label_tag }}{{ form.lugar }}{{ form.lugar.errors }}</div>
+  </div>
+  <div class="row" style="margin-top:10px">
+   <div>{{ form.fecha.label_tag }}{{ form.fecha }}{{ form.fecha.errors }}</div>
+   <div>{{ form.hora_inicio.label_tag }}{{ form.hora_inicio }}{{ form.hora_inicio.errors }}</div>
+   <div>{{ form.hora_fin.label_tag }}{{ form.hora_fin }}{{ form.hora_fin.errors }}</div>
+   <div>{{ form.creditos.label_tag }}{{ form.creditos }}{{ form.creditos.errors }}</div>
+   <div>{{ form.profesor.label_tag }}{{ form.profesor }}{{ form.profesor.errors }}</div>
+  </div>
+  <div style="margin-top:10px" class="check-list">{{ form.carreras_sel.label_tag }}{{ form.carreras_sel }}{{ form.carreras_sel.errors }}</div>
+  <div style="margin-top:10px">{{ form.preguntas.label_tag }}{{ form.preguntas }}<p class="help">{{ form.preguntas.help_text }}</p>{{ form.preguntas.errors }}</div>
+  <div style="margin-top:12px"><button class="btn sm" type="submit">Guardar y generar QR</button></div>
+ </form>
+</div>
+<table>
+ <tr><th>Conferencia</th><th>Fecha y horario</th><th>Créditos</th><th>Profesor</th><th>Preguntas</th><th>Registros</th><th>Estado</th><th></th></tr>
+ {% for c in conferencias %}
+ <tr><td>{{ c.nombre }}</td><td>{{ c.fecha|date:"d/m/Y" }} · {{ c.hora_inicio|time:"H:i" }}–{{ c.hora_fin|time:"H:i" }}</td>
+  <td>{{ c.creditos }}</td><td>{{ c.profesor.get_full_name|default:c.profesor.username|default:"—" }}</td><td>{{ c.n_preg }}</td><td>{{ c.n_reg }}</td>
+  <td>{% with e=c.estado %}<span class="badge {% if e == 'Activa' %}b-ok{% elif e == 'Programada' %}b-info{% else %}b-wait{% endif %}">{{ e }}</span>{% endwith %}</td>
+  <td><a href="{% url 'tablero' %}?conf={{ c.pk }}">Ver tablero</a></td></tr>
+ {% empty %}<tr><td colspan="8" class="mut">Aún no hay conferencias.</td></tr>{% endfor %}
+</table>
+{% endblock %}

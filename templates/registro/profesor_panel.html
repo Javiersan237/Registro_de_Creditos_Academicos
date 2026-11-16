@@ -1,0 +1,62 @@
+{% extends "registro/base.html" %}
+{% block title %}Panel del profesor{% endblock %}
+{% block bartitle %}Renueva TI · Panel del profesor{% endblock %}
+{% block barright %}<span id="pmode" class="badge {% if modo_local %}b-wait{% else %}b-ok{% endif %}">{% if modo_local %}Modo red local (sin internet){% else %}Modo en línea{% endif %}</span>{% endblock %}
+{% block content %}
+<div class="row" style="align-items:stretch">
+ <div class="qrbox" style="max-width:320px">
+  <h3>Muestra este QR</h3>
+  <div id="qr"></div>
+  <p class="mut" id="qrt">Cargando…</p>
+  <p class="mut" style="text-align:center;font-size:12px">QR firmado con vigencia de 1 minuto · {{ total_qr }} QR en el paquete</p>
+  <a id="qrlink" href="#" target="_blank" class="mut" style="font-size:12px">Abrir el registro en este dispositivo</a>
+ </div>
+ <div style="flex:1.6;display:flex;flex-direction:column;gap:12px">
+  <div class="card hl"><h3>{{ c.nombre }}</h3><p class="mut">{{ c.lugar }} · {{ c.fecha|date:"d/m/Y" }} · {{ c.hora_inicio|time:"H:i" }} a {{ c.hora_fin|time:"H:i" }} h · Carreras: {{ c.carreras_nombres }}</p></div>
+  <div class="row">
+   <div class="kpi"><b id="pk1">–</b><span class="mut">Registros recibidos</span></div>
+   <div class="kpi"><b id="pk2">0</b><span class="mut">Pendientes de sincronizar</span></div>
+   <div class="kpi"><b id="reloj">--:--</b><span class="mut">Hora de este equipo</span></div>
+  </div>
+  <p class="mut" id="pexp">{% if modo_local %}Esta laptop sirve el registro en su propia red Wi-Fi. Los registros se quedan aquí hasta que termines y sincronices.{% else %}Los alumnos escanean el QR y su registro llega directo al servidor central. Si en la sala no hay señal, su celular lo guarda y lo envía después.{% endif %}</p>
+  <form method="post" action="{% url 'profesor_sincronizar' c.pk %}">{% csrf_token %}<button class="btn sm" type="submit">Terminar conferencia y sincronizar</button></form>
+  <div class="card"><h3>Últimos registros</h3><div id="ultimos" class="mut">Sin registros todavía.</div></div>
+ </div>
+</div>
+<div class="card" style="margin-top:14px">
+ <h3>Si algo falla: registro asistido</h3>
+ <p class="mut" style="margin-bottom:10px">Registra a un alumno que no pudo hacerlo por QR (por ejemplo, sin celular o sin batería). Quedará marcado «asistido por profesor» y pasa por la validación de horario y duplicado.</p>
+ <form method="post" action="{% url 'profesor_asistido' c.pk %}" class="row" style="align-items:flex-end">{% csrf_token %}
+  <div><label for="as_nc">Número de control</label><input type="text" id="as_nc" name="no_control" inputmode="numeric" maxlength="8" required></div>
+  <div style="flex:2"><label for="as_mot">Motivo</label><input type="text" id="as_mot" name="motivo" required placeholder="Ej. Su celular no tiene batería"></div>
+  <div style="flex:0 0 auto"><button class="btn sm" type="submit">Registrar con apoyo</button></div>
+ </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const QRS = {{ qrs_json|safe }}, INICIO = {{ inicio }}, CIERRE = {{ cierre }};
+const porMinuto = Object.fromEntries(QRS.map(q => [q.m, q]));
+function hhmm(m){ const d = new Date(m*60000); return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false}); }
+function tick(){
+  const ahora = Date.now(), m = Math.floor(ahora/60000), seg = 60 - Math.floor((ahora/1000) % 60);
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const box = document.getElementById('qr'), t = document.getElementById('qrt'), a = document.getElementById('qrlink');
+  if (m < INICIO) { box.innerHTML = '<p class="msg info">El registro abre a las ' + hhmm(INICIO) + ' h.</p>'; t.textContent = 'Aún no inicia'; a.style.display='none'; return; }
+  if (m > CIERRE) { box.innerHTML = '<p class="msg err">Registro cerrado desde las ' + hhmm(CIERRE+1) + ' h.</p>'; t.textContent = 'Cerrado'; a.style.display='none'; return; }
+  const q = porMinuto[m];
+  if (box.dataset.m != m) { box.innerHTML = q.svg; box.dataset.m = m; a.href = q.url; a.style.display=''; }
+  t.textContent = 'Cambia en 0:' + String(seg % 60).padStart(2,'0') + ' · cierra a las ' + hhmm(CIERRE+1) + ' h';
+}
+async function estado(){
+  try {
+    const j = await (await fetch('{% url "profesor_estado" c.pk %}')).json();
+    document.getElementById('pk1').textContent = j.recibidos;
+    document.getElementById('pk2').textContent = j.pendientes_sync;
+    document.getElementById('ultimos').innerHTML = j.ultimos.length ? j.ultimos.map(u =>
+      `<div>${u.hora} · ${u.folio} · ${u.alumno} · <span class="badge ${u.valido?'b-ok':'b-bad'}">${u.valido?'Válido':'No válido'}</span></div>`).join('') : 'Sin registros todavía.';
+  } catch(e) {}
+}
+tick(); setInterval(tick, 1000); estado(); setInterval(estado, 8000);
+</script>
+{% endblock %}

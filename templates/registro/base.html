@@ -1,0 +1,47 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#00102E">
+<link rel="icon" href="{% static 'img/icon-192.png' %}">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/renueva.css' %}">
+<title>{% block title %}Renueva TI{% endblock %} · Renueva TI</title>
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="{% static 'img/isotipo.png' %}" alt=""><b>Renueva <span>TI</span></b></a>
+  <small>Prototipo funcional · E4 · Datos simulados</small>
+  <nav class="roles">
+    {% block nav %}
+    <a href="/app/" {% if request.path == '/app/' %}class="on"{% endif %}>Alumno (celular)</a>
+    {% if es_profesor %}<a href="{% url 'profesor' %}" {% if '/profesor/' in request.path %}class="on"{% endif %}>Profesor designado</a>{% endif %}
+    {% if es_comite %}<a href="{% url 'comite' %}" {% if '/comite/' in request.path %}class="on"{% endif %}>Comité Académico</a>{% endif %}
+    {% if es_servicios %}<a href="{% url 'servicios' %}" {% if '/servicios/' in request.path %}class="on"{% endif %}>Servicios Escolares</a>{% endif %}
+    {% if es_servicios or es_comite %}<a href="{% url 'avisos' %}" {% if '/avisos/' in request.path %}class="on"{% endif %}>Avisos</a>{% endif %}
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button type="submit">Salir ({{ user.get_full_name|default:user.username }})</button></form>
+    {% else %}
+      <a href="{% url 'login' %}">Iniciar sesión</a>
+    {% endif %}
+    {% endblock %}
+  </nav>
+</header>
+{% if notif_modo == 'prueba' %}<div class="note">Modo de prueba: los avisos reales solo salen a los correos y teléfonos de la lista blanca; los demás se registran como «simulados».{% if modo_local %} · <b>Modo local (laptop del profesor)</b>{% endif %}</div>{% endif %}
+<main>
+{% block main %}
+ <div class="desk">
+  <div class="bar"><b>{% block bartitle %}Renueva TI{% endblock %}</b>{% block barright %}{% endblock %}</div>
+  <div class="body">
+   {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+   {% block content %}{% endblock %}
+  </div>
+ </div>
+{% endblock %}
+</main>
+<footer class="pie">Renueva TI · Renovando Mundos, Renovándote a ti · Prototipo escolar para el TecNM Campus Matehuala</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

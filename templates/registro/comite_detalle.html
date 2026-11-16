@@ -1,0 +1,18 @@
+{% extends "registro/base.html" %}
+{% block title %}Detalle por carrera{% endblock %}
+{% block bartitle %}Renueva TI · Comité Académico{% endblock %}
+{% block content %}
+{% include "registro/_comite_tabs.html" %}
+<p><a class="btn sec sm" href="{% url 'tablero' %}{% if conf %}?conf={{ conf.pk }}{% endif %}">← Volver al tablero</a></p>
+<h3 style="margin:12px 0">{{ carrera }}{% if conf %} · {{ conf.nombre }}{% endif %}</h3>
+<div class="scroll"><table>
+ <tr><th>Alumno (simulado)</th><th>No. control</th><th>Conferencia</th><th>Aciertos</th><th>Tiempo</th><th>Origen</th><th>Folio</th><th>Resultado</th></tr>
+ {% for r in registros %}
+ <tr><td>{{ r.alumno.nombre_completo }}</td><td>{{ r.alumno.no_control }}</td><td>{{ r.conferencia.nombre }}</td>
+  <td>{% if r.origen == 'asistido' %}No aplica{% else %}{{ r.aciertos }}/{{ r.total }} ({{ r.porcentaje|floatformat:0 }} %){% endif %}</td>
+  <td>{% if r.origen == 'asistido' %}—{% else %}{{ r.tiempo_seg }} s{% endif %}</td>
+  <td>{{ r.get_origen_display }}{% if r.motivo_asistido %}<br><span class="mut">{{ r.motivo_asistido }}</span>{% endif %}</td><td>{{ r.folio }}</td>
+  <td>{% if r.valido %}<span class="badge b-ok">Válido{% if r.lote %} · enviado{% endif %}</span>{% else %}<span class="badge b-bad">No válido · {{ r.motivo }}</span>{% endif %}</td></tr>
+ {% empty %}<tr><td colspan="8" class="mut">Sin registros para esta carrera.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

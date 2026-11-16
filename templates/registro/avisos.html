@@ -1,0 +1,19 @@
+{% extends "registro/base.html" %}
+{% block title %}Avisos{% endblock %}
+{% block bartitle %}Renueva TI · Avisos a los alumnos{% endblock %}
+{% block content %}
+<div class="row" style="margin-bottom:12px">
+ <div class="kpi"><b>{% if correo_real %}SMTP{% else %}Archivo{% endif %}</b><span class="mut">Correo: {% if correo_real %}envío real por SMTP{% else %}se guarda en la carpeta outbox/ (sin credenciales){% endif %}</span></div>
+ <div class="kpi"><b>{% if wa.activo %}Conectado{% else %}No conectado{% endif %}</b><span class="mut">WhatsApp · {{ wa.detalle }}</span></div>
+ <div class="kpi"><b>{{ notif_modo|title }}</b><span class="mut">Modo de envío{% if notif_modo == 'prueba' %}: solo lista blanca{% endif %}</span></div>
+</div>
+<p class="mut">Resumen: {% for r in resumen %}{{ r.canal }} {{ r.estado }}: {{ r.n }}{% if not forloop.last %} · {% endif %}{% empty %}sin avisos todavía{% endfor %}</p>
+<form method="post" style="margin:10px 0">{% csrf_token %}<button class="btn sm" type="submit">Reintentar avisos con error</button></form>
+<div class="scroll"><table style="font-size:13px">
+ <tr><th>Fecha</th><th>Alumno</th><th>Canal</th><th>Destino</th><th>Tipo</th><th>Asunto</th><th>Estado</th></tr>
+ {% for a in avisos %}
+ <tr><td>{{ a.creado|date:"d/m H:i:s" }}</td><td>{{ a.alumno.no_control }}</td><td>{{ a.get_canal_display }}</td><td>{{ a.destino }}</td><td>{{ a.tipo }}</td><td>{{ a.asunto }}</td>
+  <td><span class="badge {% if a.estado == 'enviado' %}b-ok{% elif a.estado == 'error' %}b-bad{% elif a.estado == 'simulado' %}b-info{% else %}b-wait{% endif %}">{{ a.get_estado_display }}</span>{% if a.error %}<br><span class="mut">{{ a.error|truncatechars:120 }}</span>{% endif %}</td></tr>
+ {% empty %}<tr><td colspan="7" class="mut">Sin avisos todavía.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

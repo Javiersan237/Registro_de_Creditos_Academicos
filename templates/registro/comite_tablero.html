@@ -1,0 +1,31 @@
+{% extends "registro/base.html" %}
+{% block title %}Tablero por carrera{% endblock %}
+{% block bartitle %}Renueva TI · Comité Académico{% endblock %}
+{% block content %}
+{% include "registro/_comite_tabs.html" %}
+<form method="get" class="row" style="align-items:flex-end;margin-bottom:12px">
+ <div style="flex:3"><label for="conf">Conferencia</label>
+  <select name="conf" id="conf" onchange="this.form.submit()"><option value="">Todas las conferencias</option>
+  {% for c in conferencias %}<option value="{{ c.pk }}" {% if conf and conf.pk == c.pk %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+</form>
+<div class="row">
+ <div class="kpi"><b>{{ tot.total }}</b><span class="mut">Registros recibidos</span></div>
+ <div class="kpi"><b>{{ tot.validos }}</b><span class="mut">Válidos</span></div>
+ <div class="kpi"><b>{{ tot.no_validos }}</b><span class="mut">No válidos (con motivo)</span></div>
+ <div class="kpi"><b>{{ tot.pendientes }}</b><span class="mut">Válidos por enviar</span></div>
+</div>
+<p class="mut" style="margin:12px 0">El sistema ya validó cada registro. Revisa el estado y, si todo está correcto, presiona «Enviar». Haz clic en una carrera para ver alumno por alumno. Los registros que siguen guardados en celulares sin señal aparecerán aquí cuando esos celulares se conecten.</p>
+<table>
+ <tr><th>Carrera</th><th>Registros</th><th>Válidos por enviar</th><th>Válidos enviados</th><th>No válidos</th><th>Estado</th></tr>
+ {% for f in filas %}
+ <tr class="click" onclick="location.href='{% url 'detalle_carrera' f.clave %}{% if conf %}?conf={{ conf.pk }}{% endif %}'">
+  <td><a href="{% url 'detalle_carrera' f.clave %}{% if conf %}?conf={{ conf.pk }}{% endif %}">{{ f.nombre }}</a></td><td>{{ f.total }}</td><td>{{ f.validos_pend }}</td><td>{{ f.enviados }}</td><td>{{ f.no_validos }}</td>
+  <td>{% if not f.total %}<span class="badge b-info">Sin registros</span>{% elif f.validos_pend %}<span class="badge b-wait">Listo para enviar</span>{% else %}<span class="badge b-ok">Enviado</span>{% endif %}</td></tr>
+ {% endfor %}
+</table>
+<form method="post" action="{% url 'enviar' %}" class="row" style="align-items:center;margin-top:14px" onsubmit="this.querySelector('button').disabled=true">{% csrf_token %}
+ {% if conf %}<input type="hidden" name="conf" value="{{ conf.pk }}">{% endif %}
+ <span class="mut">{% if tot.pendientes %}Se enviarán {{ tot.pendientes }} registros válidos{% if conf %} de «{{ conf.nombre }}»{% endif %}.{% else %}No hay registros válidos por enviar.{% endif %}</span>
+ <button class="btn sm" type="submit" style="flex:0 0 auto" {% if not tot.pendientes %}disabled{% endif %}>Enviar a Servicios Escolares</button>
+</form>
+{% endblock %}

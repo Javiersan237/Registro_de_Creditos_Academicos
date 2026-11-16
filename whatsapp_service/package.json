@@ -1,0 +1,14 @@
+{
+  "name": "renueva-ti-whatsapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servicio de avisos por WhatsApp para el prototipo de Renueva TI (biblioteca no oficial, solo pruebas)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}
