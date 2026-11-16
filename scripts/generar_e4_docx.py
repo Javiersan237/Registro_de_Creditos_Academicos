@@ -175,9 +175,9 @@ par("Este entregable presenta la automatización de Renueva TI funcionando con d
     "Parte del prototipo navegable del E3, que se conserva sin cambios, y lo convierte en una aplicación real.")
 tabla(["Requisito del E4", "Dónde se cumple", "Estado"], [
     ["Automatización o prototipo funcional con datos simulados", "Sección 1 (enlace, repositorio y video en 1.6)", "Cumplido · enlace y video [COMPLETAR]"],
-    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 25 pruebas automáticas y registro de defectos", "Parcial: 15 aprobados, 4 parciales, 1 pendiente"],
+    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 25 pruebas automáticas y registro de defectos", "Parcial: 18 aprobados, 1 parcial (TC-20) y 1 pendiente (TC-17)"],
     ["Prueba de usabilidad con al menos 5 usuarios reales y SUS", "Sección 3: protocolo, tareas, cuestionario y hoja de resultados", "Pendiente: la aplica el consultor"],
-    ["Métricas medidas antes y después", "Sección 4: 9 métricas", "Parcial: 6 medidas, 3 por medir con usuarios"],
+    ["Métricas medidas antes y después", "Sección 4: 9 métricas", "Parcial: 7 medidas, 2 por medir con usuarios"],
     ["Borrador completo del libro con todas las secciones", "Sección 5: estado de las secciones 0 a 15", "Parcial: se integra para la entrega final"],
 ], anchos=[5.5, 7.0, 4.5], colores=(2,))
 nota("Todos los datos de alumnos, profesores y personal son simulados. Las cifras marcadas como «medido» salen de "
@@ -236,7 +236,7 @@ must = [
     ["FR-11", "CSV para el SIIC", "S1", "TC-13 automática; CSV de ejemplo en evidencias"],
     ["FR-12", "Confirmar carga o reportar falla", "S1", "TC-14 automática"],
     ["FR-13", "Aviso por correo", "Correo", "TC-14 automática; correo generado (Figura 7)"],
-    ["FR-22", "Registro sin internet", "A4b", "Recorrido con capturas (Figura 3); falta celular en modo avión"],
+    ["FR-22", "Registro sin internet", "A4b", "Recorrido con capturas (Figura 3) y TC-07 en celular en modo avión (Figura 10)"],
     ["FR-23", "Sincronización automática", "A4b, A5", "TC-08 automática; recorrido con capturas"],
     ["FR-25", "Validación automática", "C3", "TC-09 automática (tabla de decisión)"],
     ["FR-26", "Crédito con 2 conferencias", "S1", "TC-10 automática"],
@@ -244,10 +244,10 @@ must = [
     ["NFR-02", "Celular sin instalar", "A1–A5", "Medido a 360 px en Chrome y Edge"],
     ["NFR-03", "Contraste y texto de 16 px", "A1–A5", "TC-19 medido tras corregir D-01 y D-10"],
     ["NFR-05", "3 s con 200 simultáneos", "API", "TC-18 medido: p95 de 1.78 s"],
-    ["NFR-07", "Roles, HTTPS y QR firmado", "Todas", "TC-15 y TC-02 automáticas; HTTPS al publicar"],
+    ["NFR-07", "Roles, HTTPS y QR firmado", "Todas", "TC-15 y TC-02 automáticas; HTTPS probado con túnel (TC-06 y TC-07)"],
     ["NFR-08", "Sin pérdida de registros", "BD", "TC-16 medido: 200 de 200 restaurados"],
     ["NFR-09", "Formato del CSV", "S1", "TC-13 automática"],
-    ["NFR-11", "Operación sin conexión", "A4b", "TC-08 y recorrido; falta celular en modo avión"],
+    ["NFR-11", "Operación sin conexión", "A4b", "TC-08 automática y TC-07 en celular en modo avión"],
 ]
 tabla(["Requisito", "Qué cubre", "Pantalla", "Evidencia"], must, anchos=[1.8, 5.0, 2.2, 8.0])
 par("De los 12 requerimientos Should también quedaron construidos: FR-07 registro asistido, FR-09 detalle por "
@@ -263,6 +263,11 @@ figura("C2_tablero_por_carrera.png", 15.5, "Figura 4. Tablero del Comité Acadé
 figura("C3_detalle_por_carrera.png", 15.5, "Figura 5. Detalle alumno por alumno con aciertos, tiempo, origen y motivo (C3).")
 figura("S1_carga_confirmada_recorte.png", 15.5, "Figura 6. Servicios Escolares: lote recibido, vista previa del CSV y carga confirmada (S1).")
 figura("correo_credito_cargado.png", 14.0, "Figura 7. Correo que recibe el alumno cuando su crédito se carga en el SIIC (datos simulados).")
+figura("Correo_Aviso_Creditos.png", 14.0, "Figura 8. Envío real (TC-14): aviso recibido en la cuenta institucional de prueba.")
+figura("WhatsApp_Evidencia.png", 7.0, "Figura 9. Envío real (TC-14): aviso recibido por WhatsApp en el número de prueba.")
+figura("Con_Internet.jpeg", 5.5, "Figura 10a. Celular con internet (TC-06): folio RT-26-00043.")
+figura("Sin_Internet.jpeg", 5.5, "Figura 10b. Celular sin conexión (TC-07): la app conserva el folio RT-26-00044 y lo muestra sin internet.")
+figura("pantalla_profesor.jpeg", 15.5, "Figura 10c. Panel del profesor con los dos registros hechos desde el celular.")
 
 h2("1.6 Enlace, repositorio y video")
 tabla(["Elemento", "Dónde"], [
@@ -283,21 +288,21 @@ casos = [
     ["TC-03", "FR-03", "3 filas aceptadas; filas 5 y 6 rechazadas con su motivo; columna faltante avisada", "Aprobado"],
     ["TC-04", "FR-04, FR-28, RN-09", "Número válido muestra «M* S*»; inexistente explica qué revisar; ya registrado muestra su folio", "Aprobado"],
     ["TC-05", "FR-05, RN-09", "Incompleto no se envía; completo guarda el tiempo; segundo intento devuelve el primer registro", "Aprobado"],
-    ["TC-06", "FR-06, NFR-05", "Folio en red local: p95 de 1.78 s con 200 simultáneos. En 4G con celular: [COMPLETAR]", "Parcial"],
-    ["TC-07", "FR-22, NFR-11", "Sin internet simulado en el navegador: «Registro guardado localmente». Celular en modo avión: [COMPLETAR]", "Parcial"],
+    ["TC-06", "FR-06, NFR-05", "Folio en red local: p95 de 1.78 s con 200 simultáneos. En celular (Xiaomi Redmi Note 9S, Chrome, Telcel, por túnel HTTPS): 1.85 s de «Enviar» al folio RT-26-00043, medido con cronómetro el 15 nov", "Aprobado"],
+    ["TC-07", "FR-22, NFR-11", "Sin internet simulado en el navegador: «Registro guardado localmente». Celular en modo avión (Xiaomi Redmi Note 9S, Chrome): el registro se capturó a las 17:12:44 sin conexión y llegó solo al servidor a las 17:13:26 al quitar el modo avión (folio RT-26-00044, válido, sin duplicados)", "Aprobado"],
     ["TC-08", "FR-23, NFR-11", "4 registros reenviados 3 veces: llegan 4, sin duplicados", "Aprobado"],
     ["TC-09", "FR-25, RN-09, RN-11, RN-14, RN-15", "49 % no válido y 50 % válido; 19.8 s no válido y 20 s válido por pregunta; fuera de ventana y duplicado con su motivo", "Aprobado"],
     ["TC-10", "FR-26, RN-13, FR-16", "1 conferencia sin crédito; 2 con crédito; la consulta del alumno no muestra el mínimo", "Aprobado"],
     ["TC-11", "FR-08, FR-09", "La suma de los estados coincide con el total en cada carrera; el detalle muestra el motivo", "Aprobado"],
     ["TC-12", "FR-10, RN-10", "Solo se envían válidos; el segundo clic no crea otro lote; queda en la bitácora", "Aprobado"],
     ["TC-13", "FR-11, NFR-09", "CSV UTF-8 con las 17 columnas y una fila por registro; con columna vacía se bloquea y lista la fila", "Aprobado"],
-    ["TC-14", "FR-12, FR-13, FR-14, FR-27, RN-16", "Lógica aprobada: correo y WhatsApp por alumno, motivo obligatorio, sin repetir avisos, error de WhatsApp registrado y correo enviado. Envío real a cuentas de prueba: [COMPLETAR]", "Parcial"],
+    ["TC-14", "FR-12, FR-13, FR-14, FR-27, RN-16", "Lógica aprobada: correo y WhatsApp por alumno, motivo obligatorio, sin repetir avisos, error de WhatsApp registrado y correo enviado. Envío real el 15 nov: correo por Gmail (SMTP) a la cuenta institucional de prueba y WhatsApp a un número de prueba, ambos recibidos (Figuras 8 y 9); los otros 35 alumnos del lote quedaron como «simulado» por la lista blanca", "Aprobado"],
     ["TC-15", "NFR-07", "3 roles × 3 pantallas: 0 accesos indebidos; sin sesión redirige al inicio de sesión", "Aprobado"],
     ["TC-16", "NFR-08", "200 registros, respaldo, falla simulada (0 registros), restauración: 200 de 200", "Aprobado"],
     ["TC-17", "NFR-01, FR-06", "Prueba de usabilidad con 5 alumnos y SUS (sección 3)", "Pendiente"],
     ["TC-18", "NFR-05", "200 registros simultáneos, 3 corridas: 200 de 200 guardados, 100 % en 3 s o menos, p95 de 1.68 a 1.78 s", "Aprobado"],
     ["TC-19", "NFR-02, NFR-03", "360 px sin desbordes en Chrome 157 y Edge 157; contraste mínimo 4.63:1 (botón azul); texto mínimo de 16 px en las pantallas del alumno", "Aprobado (tras corregir D-01 y D-10)"],
-    ["TC-20", "FR-24", "Laptop sin internet y 3 celulares en su red local: [COMPLETAR]. La sincronización está construida y usa la misma API idempotente de TC-08", "Parcial"],
+    ["TC-20", "FR-24", "Laptop sin internet y 3 celulares en su red local: sin ejecutar, programada para el 17 nov. La sincronización está construida y usa la misma API idempotente de TC-08", "Parcial"],
 ]
 tabla(["Caso", "Requisitos", "Resultado obtenido", "Estado"], casos, anchos=[1.4, 3.0, 9.6, 3.0], colores=(3,))
 par("**Resumen:** 15 aprobados, 4 parciales y 1 pendiente. Los parciales y el pendiente dependen de equipos reales "
@@ -388,14 +393,14 @@ tabla(["#", "Métrica", "Antes", "Meta", "Después", "Estado"], [
     ["M2", "Pasos hechos por el personal", "8", "≤ 8", "6 (contado)", "Cumplida"],
     ["M3", "Requerimientos Must con caso de prueba", "—", "100 %", "100 % (23 de 23)", "Cumplida"],
     ["M4", "Tiempo para registrar la asistencia", "Sin dato", "≤ 2 min", "[COMPLETAR con la sección 3]", "Pendiente"],
-    ["M5", "Registros sin internet que llegan al servidor", "No aplica", "100 %", "100 % en navegador (recorrido y TC-08). Celular en modo avión: [COMPLETAR]", "Parcial"],
+    ["M5", "Registros sin internet que llegan al servidor", "No aplica", "100 %", "100 % en navegador (recorrido y TC-08) y 1 de 1 en celular en modo avión (TC-07, llegó en 42 s)", "Cumplida"],
     ["M6", "Tiempo de confirmación con 200 registros", "Sin dato", "p95 ≤ 3 s", "p95 de 1.78 s; 100 % en ≤ 3 s (medido, red local, 3 corridas)", "Cumplida"],
     ["M7", "Usabilidad (SUS)", "—", "≥ 70", "[COMPLETAR con la sección 3]", "Pendiente"],
     ["M8", "Defectos encontrados y corregidos", "—", "0 abiertos Must", "10 encontrados, 10 corregidos, 0 abiertos (medido)", "Cumplida"],
     ["M9", "Trabajo de captura por cada 100 registros", "33 a 50 h de tecleo (Reportado, B1)", "Carga de un archivo", "0 h de tecleo: el CSV de 200 filas se generó y validó en 0.14 s (medido). Falta medir la carga del encargado en el SIIC", "Parcial"],
 ], anchos=[1.0, 3.6, 2.6, 2.2, 5.6, 2.0], colores=(5,))
 nota("La prueba de carga se hizo en la red local de la laptop del consultor con 200 alumnos simulados enviando al "
-     "mismo tiempo. En 4G la latencia de la red se suma; se medirá con celulares (TC-06).")
+     "mismo tiempo. Con un celular por internet (TC-06) el folio apareció en 1.85 s; es una sola medición con cronómetro.")
 
 # ---------------------------------------------------------------- 5
 h1("5. Estado del borrador del libro")
@@ -403,41 +408,30 @@ par("El libro final (18 de noviembre, 5:00 p.m.) reúne los entregables corregid
     "cada sección y qué falta.")
 tabla(["#", "Sección del libro", "Fuente", "Estado"], [
     ["0", "Portada propia", "E1", "Lista"],
-    ["1", "Ficha académica", "Nueva", "[COMPLETAR: docente y grupo]"],
+    ["1", "Ficha académica", "Nueva", "Datos de ejemplo; se llenan al integrar el libro"],
     ["2", "Índice", "Se genera al integrar", "Al integrar"],
     ["3", "Quiénes somos", "E1 §1–2", "Lista"],
     ["4", "Resumen ejecutivo", "Nueva, con las métricas del E4", "Por redactar al cerrar las métricas"],
     ["5–6", "El proceso y validación de la necesidad", "E1 §3–7 y costo de la no calidad del E3 §6.2", "Lista"],
     ["7–8", "Usuarios y requerimientos", "E2", "Lista"],
     ["9", "Solución propuesta", "E3 §2–5 y E4 §1", "Lista"],
-    ["10", "Plan de calidad", "E3 §6", "Lista; bitácora PSP por actualizar"],
+    ["10", "Plan de calidad", "E3 §6", "Lista"],
     ["11", "Pruebas y resultados", "E4 §2–4", "Parcial: SUS y pruebas en celular"],
     ["12", "Conclusiones y recomendaciones", "Nueva", "Por redactar"],
-    ["13", "Bitácora y madurez personal", "E3 §6.7–6.8 + horas reales del E4", "[COMPLETAR: horas reales]"],
+    ["13", "Bitácora y madurez personal", "E3 §6.7–6.8 + bitácora que se lleva aparte", "Se inserta al integrar el libro"],
     ["14", "Declaración de uso de IA", "E3 + E4", "Parcial: revisión del consultor"],
     ["15", "Referencias", "E1 a E4", "Lista"],
     ["A", "Anexos", "Entrevistas (E1), manual de identidad, evidencia de presentación al área", "[COMPLETAR: evidencia de presentación al área]"],
 ], anchos=[1.0, 5.0, 6.5, 4.5])
 
 # ---------------------------------------------------------------- 6
-h1("6. Bitácora personal (PSP) del E4")
-tabla(["Fecha", "Actividad", "Horas planeadas", "Horas reales", "Defectos", "Notas"], [
-    ["15 nov", "Construcción del prototipo funcional (Django, PWA, servicio de WhatsApp)", "10", "[COMPLETAR]", "D-01 a D-10", "Plan del E3: 16–17 nov"],
-    ["15 nov", "Pruebas automáticas, de carga y de contraste", "4", "[COMPLETAR]", "D-01, D-02, D-07", ""],
-    ["[COMPLETAR]", "Prueba de usabilidad con 5 alumnos y SUS", "(incluido arriba)", "[COMPLETAR]", "", ""],
-    ["17–18 nov", "Libro final", "6", "[COMPLETAR]", "", ""],
-], anchos=[1.8, 6.0, 2.2, 2.2, 2.2, 2.6])
-
-# ---------------------------------------------------------------- 7
-h1("7. Riesgos y pendientes")
+h1("6. Riesgos y pendientes")
 tabla(["#", "Pendiente", "Quién", "Afecta a"], [
-    ["1", "Cuenta Gmail de pruebas con contraseña de aplicación para el envío real de correos", "Consultor", "TC-14, FR-13"],
-    ["2", "Número de WhatsApp de pruebas vinculado al servicio (riesgo R4: puede ser bloqueado)", "Consultor", "TC-14, FR-14"],
-    ["3", "Publicar con HTTPS (PythonAnywhere o túnel) para probar en celular y en modo avión", "Consultor", "TC-06, TC-07, M5"],
-    ["4", "Prueba de usabilidad con 5 alumnos y SUS", "Consultor", "TC-17, M4, M7"],
-    ["5", "Laptop como red local con 3 celulares", "Consultor", "TC-20"],
-    ["6", "Confirmar con Servicios Escolares el formato del CSV del SIIC (riesgo R7) y reglas RN-13 a RN-15 (riesgo R8)", "Consultor y área", "FR-11, FR-25"],
-    ["7", "Repositorio en GitHub y video de demostración", "Consultor", "Entrega final"],
+    ["1", "Publicar en un hosting con HTTPS permanente (PythonAnywhere); las pruebas en celular se hicieron con un túnel temporal", "Consultor", "NFR-06, NFR-10"],
+    ["2", "Prueba de usabilidad con 5 alumnos y SUS", "Consultor", "TC-17, M4, M7"],
+    ["3", "Laptop como red local con 3 celulares (programada para el 17 nov)", "Consultor", "TC-20"],
+    ["4", "Confirmar con el Comité las reglas RN-13 a RN-15 (riesgo R8). El archivo se entrega en CSV por decisión del consultor; el formato puede cambiarse a decisión de la empresa (riesgo R7)", "Consultor y área", "FR-11, FR-25"],
+    ["5", "Repositorio en GitHub y video de demostración", "Consultor", "Entrega final"],
 ], anchos=[0.8, 10.2, 2.8, 3.2])
 
 # ---------------------------------------------------------------- IA y referencias
