@@ -32,6 +32,9 @@ class Base(TestCase):
             Alumno.objects.create(no_control=f"9966000{i}", nombre="María", apellidos=f"Sánchez {i}",
                                   carrera=carrera, semestre=3, grupo="A", telefono=f"488000000{i}",
                                   correo=f"l9966000{i}@ejemplo.test")
+        for a in Alumno.objects.all():   # NIP de prueba: 1234 para todos
+            a.set_nip("1234")
+            a.save()
         ahora = timezone.localtime()
         ini = (ahora - timedelta(minutes=30)).replace(second=0, microsecond=0)
         self.conf = self._conf("Conferencia activa", ini, ini + timedelta(minutes=90))
@@ -54,10 +57,10 @@ class Base(TestCase):
             Pregunta.objects.create(conferencia=c, orden=n, texto=f"P{n}", opciones=["a", "b", "c"], correcta=0)
         return c
 
-    def registrar(self, nc="99660001", resp=None, t=150, minuto=None, conf=None, u=None):
+    def registrar(self, nc="99660001", resp=None, t=150, minuto=None, conf=None, u=None, nip="1234"):
         conf = conf or self.conf
         return servicios.registrar_por_qr(
-            uuid=u or uuid.uuid4(), token=firma.firmar(conf, minuto or self.m), no_control=nc,
+            uuid=u or uuid.uuid4(), token=firma.firmar(conf, minuto or self.m), no_control=nc, nip=nip,
             respuestas=resp if resp is not None else [0, 0, 0, 0, 0], tiempo_seg=t)
 
 
@@ -119,21 +122,26 @@ class TC03_Padron(Base):
     """TC-03 · FR-03 · 3 filas válidas, 1 sin número de control, 1 con carrera vacía."""
 
     def test_carga(self):
-        csv = ("no_control,nombre,apellidos,carrera,semestre,grupo,telefono,correo\n"
-               "11110001,Ana,Pérez,SIS,1,A,4880000001,a@ejemplo.test\n"
-               "11110002,Luis,Ruiz,Ing. Civil,3,B,,l@ejemplo.test\n"
-               "11110003,Eva,Gil,IND,5,A,4880000003,e@ejemplo.test\n"
-               ",Sin,Numero,SIS,1,A,,s@ejemplo.test\n"
-               "11110005,Sin,Carrera,,1,A,,c@ejemplo.test\n")
+        csv = ("no_control,nip,nombre,apellidos,carrera,semestre,grupo,telefono,correo\n"
+               "11110001,0412,Ana,Pérez,SIS,1,A,4880000001,a@ejemplo.test\n"
+               "11110002,7730,Luis,Ruiz,Ing. Civil,3,B,,l@ejemplo.test\n"
+               "11110003,9005,Eva,Gil,IND,5,A,4880000003,e@ejemplo.test\n"
+               ",1111,Sin,Numero,SIS,1,A,,s@ejemplo.test\n"
+               "11110005,2222,Sin,Carrera,,1,A,,c@ejemplo.test\n"
+               "11110006,12,Nip,Corto,SIS,1,A,,n@ejemplo.test\n")
         r = servicios.cargar_padron(csv, self.se)
         self.assertEqual(r["aceptadas"], 3)
-        self.assertEqual([f for f, _ in r["rechazadas"]], [5, 6])
+        self.assertEqual([f for f, _ in r["rechazadas"]], [5, 6, 7])
         self.assertIn("número de control", r["rechazadas"][0][1])
         self.assertIn("carrera", r["rechazadas"][1][1])
+        self.assertIn("NIP", r["rechazadas"][2][1])
+        ana = Alumno.objects.get(pk="11110001")
+        self.assertTrue(ana.nip_coincide("0412"))
+        self.assertNotIn("0412", ana.nip_hash)   # el NIP no se guarda en claro
 
     def test_columna_faltante(self):
         with self.assertRaisesMessage(servicios.ErrorRegistro, "faltan las columnas: correo"):
-            servicios.cargar_padron("no_control,nombre,apellidos,carrera,semestre,grupo,telefono\n", self.se)
+            servicios.cargar_padron("no_control,nip,nombre,apellidos,carrera,semestre,grupo,telefono\n", self.se)
 
 
 class TC04_Identificacion(Base):
@@ -141,17 +149,62 @@ class TC04_Identificacion(Base):
 
     def test_api_identificar(self):
         c = Client()
-        r = c.post("/api/identificar", json.dumps({"no_control": "99660001", "conferencia": self.conf.pk}),
-                   content_type="application/json")
+        r = c.post("/api/identificar", json.dumps({"no_control": "99660001", "nip": "1234",
+                   "conferencia": self.conf.pk}), content_type="application/json")
         self.assertEqual(r.json()["nombre_parcial"], "M* S*")
-        r = c.post("/api/identificar", json.dumps({"no_control": "12345678"}), content_type="application/json")
+        r = c.post("/api/identificar", json.dumps({"no_control": "12345678", "nip": "1234"}),
+                   content_type="application/json")
         self.assertEqual(r.status_code, 404)
         self.assertIn("Revisa", r.json()["error"])
         reg, *_ = self.registrar("99660001")
-        r = c.post("/api/identificar", json.dumps({"no_control": "99660001", "conferencia": self.conf.pk}),
-                   content_type="application/json")
+        r = c.post("/api/identificar", json.dumps({"no_control": "99660001", "nip": "1234",
+                   "conferencia": self.conf.pk}), content_type="application/json")
         self.assertTrue(r.json()["ya_registrado"])
         self.assertEqual(r.json()["registro"]["folio"], reg.folio)
+
+    def _identificar(self, nc, nip):
+        return Client().post("/api/identificar", json.dumps({"no_control": nc, "nip": nip, "conferencia": self.conf.pk}),
+                             content_type="application/json")
+
+    def test_nip_incorrecto_no_muestra_datos(self):
+        """Con el número de control de un compañero pero sin su NIP no se puede continuar ni ver su nombre."""
+        for nip in ("0000", "", "12345", "abcd"):
+            r = self._identificar("99660002", nip)
+            self.assertEqual(r.status_code, 403)
+            self.assertNotIn("nombre_parcial", r.json())
+            self.assertIn("NIP", r.json()["error"])
+
+    def test_nip_incorrecto_no_registra(self):
+        """También al sincronizar un registro hecho sin internet: el NIP se verifica en el servidor."""
+        r = Client().post("/api/registros", json.dumps({
+            "uuid": str(uuid.uuid4()), "token": firma.firmar(self.conf, self.m), "no_control": "99660002",
+            "nip": "9999", "respuestas": [0] * 5, "tiempo_seg": 120}), content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(Registro.objects.count(), 0)
+        with self.assertRaises(servicios.ErrorRegistro):
+            self.registrar("99660002", nip=None)
+        self.assertEqual(Registro.objects.count(), 0)
+
+    def test_bloqueo_tras_cinco_intentos(self):
+        for _ in range(5):
+            self.assertEqual(self._identificar("99660003", "0000").status_code, 403)
+        r = self._identificar("99660003", "1234")           # ya ni con el NIP correcto
+        self.assertEqual(r.status_code, 429)
+        self.assertIn("15 minutos", r.json()["error"])
+        Alumno.objects.filter(pk="99660003").update(nip_bloqueado_hasta=timezone.now() - timedelta(seconds=1))
+        self.assertEqual(self._identificar("99660003", "1234").status_code, 200)
+        self.assertEqual(self._identificar("99660004", "1234").status_code, 200)   # no afecta a otros alumnos
+
+    def test_laptop_del_profesor_sincroniza_con_firma(self):
+        """Modo B: la laptop ya verificó el NIP y sube el registro firmado, sin reenviar el NIP."""
+        u = uuid.uuid4()
+        cuerpo = {"uuid": str(u), "token": firma.firmar(self.conf, self.m), "no_control": "99660004",
+                  "respuestas": [0] * 5, "tiempo_seg": 120, "origen": "red_local"}
+        r = Client().post("/api/registros", json.dumps({**cuerpo, "sync_firma": "falsa"}), content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+        r = Client().post("/api/registros", json.dumps({**cuerpo, "sync_firma": firma.firma_sync(u)}),
+                          content_type="application/json")
+        self.assertEqual(r.status_code, 201)
 
 
 class TC05_Cuestionario(Base):
@@ -179,7 +232,7 @@ class TC08_Sincronizacion(Base):
         for _ in range(3):   # se reenvían tres veces, como haría un celular con mala señal
             for u, nc in zip(uuids, ["99660001", "99660002", "99660003", "99660004"]):
                 r = c.post("/api/registros", json.dumps({"uuid": u, "token": firma.firmar(self.conf, self.m),
-                           "no_control": nc, "respuestas": [0] * 5, "tiempo_seg": 120}),
+                           "no_control": nc, "nip": "1234", "respuestas": [0] * 5, "tiempo_seg": 120}),
                            content_type="application/json")
                 self.assertIn(r.status_code, (200, 201))
         self.assertEqual(Registro.objects.count(), 4)

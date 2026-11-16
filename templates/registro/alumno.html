@@ -32,15 +32,17 @@
   <!-- A2 Identificación -->
   <section class="body" data-screen="A2">
    <div><div class="prog"><i style="width:33%"></i></div><p class="mut" style="margin-top:6px">Paso 1 de 3 · Identifícate</p></div>
-   <h2>¿Cuál es tu número de control?</h2>
+   <h2>Escribe tu número de control y tu NIP</h2>
    <div id="a2form">
     <label for="nc">Número de control</label>
     <input type="text" id="nc" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Ejemplo: 99660001">
-    <p class="mut" style="margin-top:8px">Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p>
+    <label for="nip" style="margin-top:12px">NIP (4 dígitos)</label>
+    <input type="password" id="nip" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="El mismo NIP con el que entras al SIIC">
+    <p class="mut" style="margin-top:8px">Tu NIP es personal: no lo compartas. Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p>
     <p id="nc-err" class="msg err" style="display:none;margin-top:8px"></p>
    </div>
    <div id="a2confirm" class="card hl" style="display:none">
-    <h3 id="a2hola"></h3><p class="mut">¿Eres tú? Si no, corrige tu número.</p>
+    <h3 id="a2hola"></h3><p class="mut">¿Eres tú? Si no, corrige tus datos.</p>
     <div class="row" style="margin-top:10px"><button class="btn sm" id="a2si">Sí, soy yo</button><button class="btn sm sec" id="a2no">No, corregir</button></div>
    </div>
    <button class="btn" id="a2next">Continuar</button>

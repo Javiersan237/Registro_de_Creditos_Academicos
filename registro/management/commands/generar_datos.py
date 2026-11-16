@@ -4,6 +4,8 @@
   python manage.py generar_datos --telefono 4881234567 --correo tu_correo@matehuala.tecnm.mx
 
 --telefono/--correo se asignan SOLO al alumno de prueba 99660001 para recibir los avisos.
+El NIP del alumno de prueba es 1234 (o el de --nip); el de los demás son los 4 últimos dígitos de su
+número de control al revés (99660002 -> 2000).
 Los demás alumnos usan correos @ejemplo.test (dominio reservado, no se entregan) y sin teléfono.
 """
 import random
@@ -39,6 +41,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--telefono", default="", help="Teléfono (10 dígitos) del alumno de prueba 99660001")
         parser.add_argument("--correo", default="", help="Correo del alumno de prueba 99660001")
+        parser.add_argument("--nip", default="1234", help="NIP (4 dígitos) del alumno de prueba 99660001")
+        parser.add_argument("--docente", default=os.environ.get("DEMO_DOCENTE", "Profesor Demo 03"),
+                            help="Nombre de ejemplo del profesor designado (o DEMO_DOCENTE en .env)")
+        parser.add_argument("--grupo", default=os.environ.get("DEMO_GRUPO", "A"),
+                            help="Grupo de ejemplo del alumno de prueba (o DEMO_GRUPO en .env)")
         parser.add_argument("--password", default="Renueva2026!", help="Contraseña de los usuarios de demostración")
         parser.add_argument("--alumnos", type=int, default=60)
         parser.add_argument("--sin-historial", action="store_true", help="No crear registros de la conferencia de ayer")
@@ -51,7 +58,7 @@ class Command(BaseCommand):
         grupos = {n: Group.objects.get_or_create(name=n)[0] for n in (GRUPO_COMITE, GRUPO_PROFESOR, GRUPO_SERVICIOS)}
         usuarios = {}
         for username, nombre, grupo in [("comite", "Comité Demo", GRUPO_COMITE),
-                                         ("profesor", "Profesor Demo 03", GRUPO_PROFESOR),
+                                         ("profesor", o["docente"], GRUPO_PROFESOR),
                                          ("servicios", "Servicios Escolares Demo", GRUPO_SERVICIOS)]:
             u, _ = User.objects.get_or_create(username=username)
             u.first_name = nombre
@@ -68,12 +75,15 @@ class Command(BaseCommand):
         claves = [c for c, _ in CARRERAS]
         for i in range(1, o["alumnos"] + 1):
             nc = f"9966{i:04d}"
-            Alumno.objects.update_or_create(no_control=nc, defaults=dict(
+            a, _ = Alumno.objects.update_or_create(no_control=nc, defaults=dict(
                 nombre="Alumno", apellidos=f"Demo {i:03d}", carrera=claves[(i - 1) % len(claves)],
                 semestre=random.choice([1, 3, 5, 7]), grupo=random.choice(["A", "B"]),
                 telefono="", correo=f"l{nc}@ejemplo.test"))
+            a.set_nip(nc[:3:-1])
+            a.save()
         prueba = Alumno.objects.get(pk="99660001")
-        prueba.nombre, prueba.apellidos = "Usuario", "Prueba Renueva"
+        prueba.nombre, prueba.apellidos, prueba.grupo, prueba.semestre = "Usuario", "Prueba Renueva", o["grupo"], 5
+        prueba.set_nip(o["nip"])
         if o["telefono"]:
             prueba.telefono = o["telefono"]
         if o["correo"]:
@@ -120,12 +130,14 @@ class Command(BaseCommand):
                     else:
                         resp, t = correctas[:4] + [random.choice([0, 1])], random.randint(110, 280)
                     registrar_por_qr(uuid=uuid.uuid4(), token=firma.firmar(c_ayer, m0 + random.randint(5, 80)),
-                                     no_control=nc, respuestas=resp, tiempo_seg=t)
+                                     no_control=nc, respuestas=resp, tiempo_seg=t, nip_verificado=True)
             from registro.models import Aviso
             Aviso.objects.all().delete()  # los avisos del historial simulado no se envían
 
         self.stdout.write(self.style.SUCCESS("Datos simulados listos."))
         self.stdout.write(f"  Usuarios: comite, profesor, servicios, admin · contraseña: {o['password']}")
         self.stdout.write(f"  Alumnos: {Alumno.objects.count()} (prueba: 99660001 -> {prueba.correo} / {prueba.telefono or 'sin teléfono'})")
+        self.stdout.write(f"  NIP del alumno de prueba: {o['nip']} · demás alumnos: 4 últimos dígitos del número al revés")
+        self.stdout.write(f"  Profesor designado (ejemplo): {o['docente']} · grupo del alumno de prueba: {prueba.grupo}")
         self.stdout.write(f"  Conferencia activa: «{c_hoy.nombre}» {c_hoy.hora_inicio:%H:%M}–{c_hoy.hora_fin:%H:%M} (id {c_hoy.pk})")
         self.stdout.write(f"  Registros: {Registro.objects.count()}")

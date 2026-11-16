@@ -17,6 +17,16 @@ class TokenInvalido(Exception):
     pass
 
 
+def firma_sync(uuid):
+    """Firma con la que la laptop del profesor (modo B) sube al servidor central un registro
+    cuyo NIP ya verificó ella. Solo la puede generar quien tiene la clave de firma."""
+    return hmac.new(settings.QR_SIGNING_KEY.encode(), f"sync:{uuid}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def firma_sync_valida(uuid, firma):
+    return bool(firma) and hmac.compare_digest(firma_sync(uuid), str(firma))
+
+
 def _firma(conferencia, minuto):
     clave = (settings.QR_SIGNING_KEY + conferencia.clave).encode()
     msg = f"{conferencia.pk}.{minuto}".encode()
