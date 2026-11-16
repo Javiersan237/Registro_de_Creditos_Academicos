@@ -4,7 +4,7 @@
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const params = new URLSearchParams(location.search);
   const token = params.get('t');
-  const st = { simOffline: false, paquete: null, confId: null, minuto: null, nc: '', t0: 0 };
+  const st = { simOffline: false, paquete: null, confId: null, minuto: null, nc: '', nip: '', t0: 0 };
 
   if (token) {
     const p = token.split('.');
@@ -124,7 +124,9 @@
   $('#a2next').onclick = async () => {
     const nc = $('#nc').value.trim();
     if (!/^\d{8}$/.test(nc)) return errA2('El número de control debe tener 8 dígitos. Revísalo y vuelve a intentarlo.');
-    errA2(''); st.nc = nc;
+    const nip = $('#nip').value.trim();
+    if (!/^\d{4}$/.test(nip)) return errA2('Escribe tu NIP de 4 dígitos: es el mismo con el que entras al SIIC.');
+    errA2(''); st.nc = nc; st.nip = nip;
     const local = await yaRegistradoLocal(nc);
     if (local) {
       if (local.tipo === 'pendiente') return mostrar('A4b');
@@ -133,7 +135,7 @@
     if (enLinea()) {
       try {
         const r = await fetch('/api/identificar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ no_control: nc, conferencia: st.confId }) });
+          body: JSON.stringify({ no_control: nc, nip, conferencia: st.confId }) });
         const j = await r.json();
         if (!j.ok) return errA2(j.error);
         if (j.ya_registrado) return mostrarResultado(j.registro, true);
@@ -157,7 +159,7 @@
     $('#a2form').style.display = ''; $('#a2next').style.display = ''; $('#a2confirm').style.display = 'none';
   }
   $('#a2si').onclick = () => iniciarCuestionario();
-  $('#a2no').onclick = () => { resetA2(); $('#nc').focus(); $('#nc').select(); };
+  $('#a2no').onclick = () => { resetA2(); $('#nip').value = ''; $('#nc').focus(); $('#nc').select(); };
 
   // ------------------------------------------------------------ A3
   function iniciarCuestionario() {
@@ -186,7 +188,7 @@
     }
     $('#a3send').disabled = true;
     const datos = {
-      uuid: nuevoUUID(), token, no_control: st.nc, respuestas, conferencia_id: st.confId,
+      uuid: nuevoUUID(), token, no_control: st.nc, nip: st.nip, respuestas, conferencia_id: st.confId,
       tiempo_seg: Math.round((Date.now() - st.t0) / 1000), capturado_en: new Date().toISOString(), origen: 'celular'
     };
     await guardarPendiente(datos, p.nombre);      // primero se guarda: nunca se pierde (NFR-08, NFR-11)
@@ -264,7 +266,7 @@
 
   // ------------------------------------------------------------ eventos
   $$('[data-go]').forEach(b => b.onclick = () => mostrar(b.dataset.go));
-  $('#a1start').onclick = () => { $('#nc').value = ''; resetA2(); errA2(''); mostrar('A2'); setTimeout(() => $('#nc').focus(), 50); };
+  $('#a1start').onclick = () => { $('#nc').value = ''; $('#nip').value = ''; st.nip = ''; resetA2(); errA2(''); mostrar('A2'); setTimeout(() => $('#nc').focus(), 50); };
   $('#net').onclick = async () => {
     st.simOffline = !st.simOffline; pintarRed();
     if (enLinea()) { await sincronizar(true); }

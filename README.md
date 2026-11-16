@@ -20,7 +20,7 @@ Usuarios de demostración (contraseña `(contraseña retirada)`): `comite`, `pro
 | # | Rol | Acción | Requisitos |
 |---|-----|--------|-----------|
 | 1 | Profesor | Entra a *Profesor designado* y abre el panel de «Automatización de procesos con Python». Se ve el QR que cambia cada minuto. | FR-02 |
-| 2 | Alumno | Escanea el QR (o usa «Abrir el registro en este dispositivo»), escribe `99660001`, confirma «Hola, U\* P\*», responde y envía. Ve su folio. | FR-04, FR-05, FR-06, FR-28 |
+| 2 | Alumno | Escanea el QR (o usa «Abrir el registro en este dispositivo»), escribe `99660001` y su NIP `1234`, confirma «Hola, U\* P\*», responde y envía. Ve su folio. | FR-04, FR-05, FR-06, FR-28 |
 | 3 | Alumno | Repite tocando «● En línea» para simular sin internet: ve «Registro guardado localmente»; al volver a tocar se envía solo. | FR-22, FR-23 |
 | 4 | Comité | *Tablero por carrera* → revisa → abre una carrera → «Enviar a Servicios Escolares». | FR-08, FR-09, FR-10 |
 | 5 | Servicios | Abre el lote → «Descargar CSV para el SIIC» → «Se cargó bien». | FR-11, FR-12, FR-26 |
@@ -45,6 +45,27 @@ Para poner tus datos en el alumno de prueba:
 .venv\Scripts\python manage.py generar_datos --telefono 4880000000 --correo tu_correo@matehuala.tecnm.mx
 ```
 
+## Identificación del alumno: número de control + NIP
+
+El alumno entra con su número de control y su **NIP de 4 dígitos**, el mismo con el que entra al SIIC. Así no
+basta conocer el número de control de un compañero para registrarlo.
+
+- El NIP llega en el padrón que entrega Servicios Escolares (columna `nip`).
+- No se guarda en claro: solo su HMAC-SHA256 con `NIP_KEY`. No va en el QR ni en el paquete del celular.
+- Tras 5 intentos fallidos el alumno se bloquea 15 minutos (`NIP_MAX_INTENTOS`, `NIP_BLOQUEO_MIN`).
+- Sin internet, el NIP viaja con el registro y se verifica al sincronizar; si es incorrecto, el registro se
+  rechaza y el alumno ve el motivo. El registro asistido por el profesor no pide NIP.
+- Datos de ejemplo: el alumno `99660001` usa el NIP `1234`; los demás, los 4 últimos dígitos de su número al
+  revés (`99660002` → `2000`). El profesor designado y el grupo de ejemplo se ponen con `--docente` y `--grupo`, o con
+  `DEMO_DOCENTE` y `DEMO_GRUPO` en `.env` (que no se sube a Git).
+
+## Archivo para el SIIC
+
+Se entrega en **CSV** por decisión del consultor, porque se convierte con facilidad a otros formatos. El formato
+es un cambio que puede realizarse a decisión de la empresa: el separador y la codificación se cambian en `.env`
+(`EXPORT_SEPARADOR`, `EXPORT_CODIFICACION`) y otro tipo de archivo se agrega en `registro/servicios.py`
+(`generar_csv`) sin tocar el resto del sistema.
+
 ## Probar desde un celular
 
 - **Misma red Wi-Fi:** abre `http://IP-DE-LA-LAPTOP:8000/app/`. Funciona en línea; el modo sin internet
@@ -56,7 +77,7 @@ Para poner tus datos en el alumno de prueba:
 
 | Comando | Para qué |
 |---------|----------|
-| `python manage.py test registro -v 2` | 25 pruebas automáticas (TC-01 a TC-15 del E3) |
+| `python manage.py test registro -v 2` | 29 pruebas automáticas (TC-01 a TC-15 del E3) |
 | `python manage.py generar_datos` | Padrón, usuarios, conferencias y registros simulados |
 | `python manage.py respaldar` / `restaurar <archivo>` | Respaldo y restauración (NFR-08) |
 | `python manage.py reenviar_avisos` | Reintenta avisos con error (CU-07 3a) |

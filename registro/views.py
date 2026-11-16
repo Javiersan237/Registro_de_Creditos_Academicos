@@ -156,6 +156,7 @@ def profesor_sincronizar(request, pk):
             resp = requests.post(f"{settings.CENTRAL_URL.rstrip('/')}/api/registros", timeout=15, json={
                 "uuid": str(r.uuid), "token": r.token, "no_control": r.alumno_id, "respuestas": r.respuestas,
                 "tiempo_seg": r.tiempo_seg, "origen": Registro.RED_LOCAL,
+                "sync_firma": firma.firma_sync(r.uuid),  # la laptop ya verificó el NIP del alumno
                 "capturado_en": r.capturado_en.isoformat() if r.capturado_en else None})
             if resp.status_code in (200, 201):
                 r.sincronizado_central = True
@@ -290,7 +291,8 @@ def lote_csv(request, pk):
         messages.error(request, "No se descargó el archivo: hay filas con columnas obligatorias vacías: " +
                        "; ".join(f"fila {f}: {', '.join(c)}" for f, c in problemas[:10]))
         return redirect("lote_detalle", pk=pk)
-    resp = HttpResponse(contenido.encode("utf-8"), content_type="text/csv; charset=utf-8")
+    cod = settings.EXPORT_CODIFICACION
+    resp = HttpResponse(contenido.encode(cod, errors="replace"), content_type=f"text/csv; charset={cod}")
     resp["Content-Disposition"] = f'attachment; filename="siic_lote_{lote.codigo}.csv"'
     return resp
 

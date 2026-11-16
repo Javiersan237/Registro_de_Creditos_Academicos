@@ -2,7 +2,9 @@
 import csv
 import io
 from collections import OrderedDict
+from datetime import timedelta
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -30,9 +32,34 @@ def buscar_alumno(no_control):
                             "si es correcto, acude con el profesor de la conferencia.", 404)
 
 
+def verificar_nip(alumno, nip):
+    """FR-04: el alumno se identifica con su número de control y su NIP de 4 dígitos (el del SIIC).
+    Tras NIP_MAX_INTENTOS fallos seguidos se bloquea NIP_BLOQUEO_MIN minutos, porque un NIP de
+    4 dígitos se podría adivinar probando."""
+    ahora = timezone.now()
+    if alumno.nip_bloqueado_hasta and alumno.nip_bloqueado_hasta > ahora:
+        raise ErrorRegistro(f"Se escribió un NIP incorrecto demasiadas veces. Espera {settings.NIP_BLOQUEO_MIN} "
+                            "minutos e inténtalo de nuevo, o acude con el profesor de la conferencia.", 429)
+    if not alumno.nip_hash:
+        raise ErrorRegistro("Tu NIP no está cargado en el padrón. Acude con el profesor de la conferencia "
+                            "para que te registre.", 403)
+    if alumno.nip_coincide(nip):
+        if alumno.nip_intentos or alumno.nip_bloqueado_hasta:
+            Alumno.objects.filter(pk=alumno.pk).update(nip_intentos=0, nip_bloqueado_hasta=None)
+        return
+    intentos, bloqueo = alumno.nip_intentos + 1, None
+    if intentos >= settings.NIP_MAX_INTENTOS:
+        intentos, bloqueo = 0, ahora + timedelta(minutes=settings.NIP_BLOQUEO_MIN)
+    Alumno.objects.filter(pk=alumno.pk).update(nip_intentos=intentos, nip_bloqueado_hasta=bloqueo)
+    raise ErrorRegistro("El NIP no coincide con ese número de control. Es el NIP de 4 dígitos con el que entras "
+                        "al SIIC. Revísalo y vuelve a intentarlo.", 403)
+
+
 def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, capturado_en=None,
-                     origen=Registro.CELULAR):
+                     origen=Registro.CELULAR, nip=None, nip_verificado=False):
     """CU-02. Idempotente: el mismo uuid devuelve el mismo registro (FR-23).
+    El NIP se verifica aquí (también para los registros hechos sin internet, al sincronizar).
+    nip_verificado=True solo lo usan los datos simulados y la laptop del profesor, que ya lo verificó.
     Devuelve (registro, nuevo: bool, duplicado: bool)."""
     previo = Registro.objects.filter(uuid=uuid).first()
     if previo:
@@ -43,6 +70,8 @@ def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, captura
     except firma.TokenInvalido as e:
         raise ErrorRegistro(str(e))
     alumno = buscar_alumno(no_control)
+    if not nip_verificado:
+        verificar_nip(alumno, nip)
 
     existente = Registro.objects.filter(alumno=alumno, conferencia=conferencia).first()
     if existente:  # RN-09: se conserva el primero y se muestra su folio
@@ -108,7 +137,8 @@ def enviar_validos(usuario, conferencia=None):
 
 
 # ---------------------------------------------------------------- CU-05
-COLUMNAS_PADRON = ["no_control", "nombre", "apellidos", "carrera", "semestre", "grupo", "telefono", "correo"]
+COLUMNAS_PADRON = ["no_control", "nip", "nombre", "apellidos", "carrera", "semestre", "grupo", "telefono",
+                   "correo"]
 
 
 def _carrera(valor):
@@ -143,6 +173,8 @@ def cargar_padron(archivo_texto, usuario=None):
         carrera = _carrera(fila["carrera"])
         if not (fila["no_control"].isdigit() and len(fila["no_control"]) == 8):
             motivo = "número de control vacío o sin 8 dígitos"
+        elif not (fila["nip"].isdigit() and len(fila["nip"]) == 4):
+            motivo = "NIP vacío o sin 4 dígitos"
         elif not fila["nombre"] or not fila["apellidos"]:
             motivo = "nombre o apellidos vacíos"
         elif not carrera:
@@ -158,9 +190,11 @@ def cargar_padron(archivo_texto, usuario=None):
         if motivo:
             rechazadas.append((i, motivo))
             continue
-        Alumno.objects.update_or_create(no_control=fila["no_control"], defaults=dict(
+        alumno, _ = Alumno.objects.update_or_create(no_control=fila["no_control"], defaults=dict(
             nombre=fila["nombre"], apellidos=fila["apellidos"], carrera=carrera,
             semestre=int(fila["semestre"]), grupo=fila["grupo"], telefono=fila["telefono"], correo=fila["correo"]))
+        alumno.set_nip(fila["nip"])
+        alumno.save(update_fields=["nip_hash", "nip_intentos", "nip_bloqueado_hasta"])
         aceptadas += 1
     Bitacora.registrar(usuario, "Carga de padrón", f"{aceptadas} filas",
                        f"Rechazadas: {len(rechazadas)}")
@@ -209,7 +243,8 @@ def generar_csv(lote, usuario=None):
     if problemas:
         return None, problemas
     salida = io.StringIO()
-    w = csv.DictWriter(salida, fieldnames=COLUMNAS_CSV, lineterminator="\r\n")
+    w = csv.DictWriter(salida, fieldnames=COLUMNAS_CSV, lineterminator="\r\n",
+                       delimiter=settings.EXPORT_SEPARADOR)
     w.writeheader()
     w.writerows(filas)
     lote.exportaciones += 1

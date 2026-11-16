@@ -17,7 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from . import firma, notificaciones, validacion
 from .models import Alumno, CodigoConsulta, Configuracion, Conferencia, Registro
-from .servicios import ErrorRegistro, buscar_alumno, registrar_por_qr
+from .servicios import ErrorRegistro, buscar_alumno, registrar_por_qr, verificar_nip
 
 
 def _json(request):
@@ -71,10 +71,12 @@ def paquete(request, pk):
 @csrf_exempt
 @require_POST
 def identificar(request):
-    """Paso 1 del registro con internet: valida el número de control (FR-04, FR-28)."""
+    """Paso 1 del registro con internet: valida el número de control y el NIP (FR-04, FR-28).
+    Sin el NIP correcto no se devuelve ningún dato del alumno."""
     try:
         datos = _json(request)
         alumno = buscar_alumno(datos.get("no_control"))
+        verificar_nip(alumno, datos.get("nip"))
         respuesta = {"ok": True, "nombre_parcial": alumno.nombre_parcial(), "ya_registrado": False}
         cid = datos.get("conferencia")
         if cid:
@@ -100,7 +102,8 @@ def registros(request):
         origen = d.get("origen") if d.get("origen") in (Registro.CELULAR, Registro.RED_LOCAL) else Registro.CELULAR
         registro, nuevo, duplicado = registrar_por_qr(
             uuid=u, token=d.get("token", ""), no_control=d.get("no_control"), respuestas=d.get("respuestas"),
-            tiempo_seg=d.get("tiempo_seg", 0), capturado_en=capturado, origen=origen)
+            tiempo_seg=d.get("tiempo_seg", 0), capturado_en=capturado, origen=origen, nip=d.get("nip"),
+            nip_verificado=firma.firma_sync_valida(u, d.get("sync_firma")))
         return JsonResponse({"ok": True, "nuevo": nuevo, "duplicado": duplicado,
                              "registro": _registro_json(registro)}, status=201 if nuevo else 200)
     except ErrorRegistro as e:

@@ -1,4 +1,6 @@
 """Modelo de datos del E3, sección 3.4."""
+import hashlib
+import hmac
 import secrets
 import uuid
 from datetime import datetime, timedelta
@@ -66,9 +68,28 @@ class Alumno(models.Model):
     grupo = models.CharField(max_length=10)
     telefono = models.CharField(max_length=10, blank=True, validators=[diez_digitos])
     correo = models.EmailField("Correo institucional")
+    # NIP de 4 dígitos (el mismo del SIIC). Nunca se guarda en claro: solo su HMAC con la clave del servidor.
+    nip_hash = models.CharField("NIP (hash)", max_length=64, blank=True, editable=False)
+    nip_intentos = models.PositiveSmallIntegerField(default=0, editable=False)
+    nip_bloqueado_hasta = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["no_control"]
+
+    def _hash_nip(self, nip):
+        clave = settings.NIP_KEY.encode()
+        return hmac.new(clave, f"{self.no_control}:{nip}".encode(), hashlib.sha256).hexdigest()
+
+    def set_nip(self, nip):
+        nip = str(nip or "").strip()
+        if not (nip.isdigit() and len(nip) == 4):
+            raise ValidationError("El NIP debe tener 4 dígitos.")
+        self.nip_hash, self.nip_intentos, self.nip_bloqueado_hasta = self._hash_nip(nip), 0, None
+
+    def nip_coincide(self, nip):
+        nip = str(nip or "").strip()
+        return (bool(self.nip_hash) and nip.isdigit() and len(nip) == 4
+                and hmac.compare_digest(self.nip_hash, self._hash_nip(nip)))
 
     def __str__(self):
         return f"{self.no_control} · {self.nombre_completo}"

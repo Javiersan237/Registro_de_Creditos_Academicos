@@ -44,7 +44,8 @@
   /* Envía la cola. Devuelve la lista de registros que sí llegaron.
      - 200/201: llegó (o ya existía: el servidor es idempotente por uuid) → sale de la cola.
      - 4xx: el servidor lo rechazó con un motivo → sale de la cola y se guarda el motivo.
-     - Red caída o 5xx: se queda en la cola para el siguiente intento. */
+     - Red caída o 5xx: se queda en la cola para el siguiente intento.
+     - 429 (NIP bloqueado por intentos fallidos de otra persona): también se queda en la cola. */
   async function rtSync() {
     if (sincronizando) return [];
     sincronizando = true;
@@ -59,12 +60,15 @@
           });
         } catch (e) { break; }  // sin conexión: se intenta después
         if (resp.status >= 500) break;
+        if (resp.status === 429) continue;
         const j = await resp.json().catch(() => ({}));
         if (resp.ok && j.registro) {
+          delete p.datos.nip;   // el NIP no se conserva en el celular después de enviarse
           await rtDB.put('registros', Object.assign({ conferencia_id: p.datos.conferencia_id, no_control: p.datos.no_control,
             duplicado: !!j.duplicado }, j.registro, { uuid: p.uuid }));
           enviados.push(j.registro);
         } else {
+          delete p.datos.nip;
           await rtDB.put('registros', { uuid: p.uuid, folio: '—', conferencia: p.conferencia, valido: false,
             no_control: p.datos.no_control, conferencia_id: p.datos.conferencia_id,
             estado: 'No se pudo registrar', motivo: j.error || 'El servidor rechazó el registro', paso: 0 });

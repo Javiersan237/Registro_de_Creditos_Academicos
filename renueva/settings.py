@@ -139,6 +139,17 @@ NOTIF_ASYNC = env("NOTIF_ASYNC", "1") == "1"
 # QR firmado (FR-02, RN-11, NFR-07). La clave nunca va en el QR ni al celular.
 # ---------------------------------------------------------------------------
 QR_SIGNING_KEY = env("QR_SIGNING_KEY", SECRET_KEY)
+# Clave con la que se guarda el NIP de los alumnos (HMAC). Si cambia, hay que volver a cargar el padrón.
+NIP_KEY = env("NIP_KEY", SECRET_KEY)
+
+# Archivo para el SIIC. CSV es decisión del consultor porque se convierte fácil a otros formatos; el formato es
+# un cambio que puede realizarse a decisión de la empresa. El separador y la codificación se cambian aquí;
+# otro tipo de archivo se agrega en registro/servicios.py (generar_csv) sin tocar el resto del sistema.
+EXPORT_SEPARADOR = env("EXPORT_SEPARADOR", ",")
+EXPORT_CODIFICACION = env("EXPORT_CODIFICACION", "utf-8")
+
+NIP_MAX_INTENTOS = int(env("NIP_MAX_INTENTOS", "5"))
+NIP_BLOQUEO_MIN = int(env("NIP_BLOQUEO_MIN", "15"))
 
 # ---------------------------------------------------------------------------
 # Modo B (FR-24): la laptop del profesor corre esta misma app sin internet y,
