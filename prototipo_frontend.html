@@ -34,7 +34,7 @@ p{margin:0;line-height:1.45} .mut{color:var(--gray);font-size:14px}
 .btn.ok{background:var(--ok)} .btn.warn{background:var(--red)}
 .btn.sm{width:auto;padding:8px 14px;font-size:14px}
 label{font-weight:600;font-size:15px;display:block;margin-bottom:6px}
-input[type=text],select,textarea{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;font:16px 'Open Sans'}
+input[type=text],input[type=password],select,textarea{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;font:16px 'Open Sans'}
 .opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:15px;cursor:pointer}
 .opt input{margin-top:3px;width:18px;height:18px}
 .prog{height:8px;background:var(--light);border-radius:6px;overflow:hidden}.prog i{display:block;height:100%;background:var(--cyan)}
@@ -101,8 +101,8 @@ body.wf .prog i{background:#888!important}
 
   <section class="body" data-screen="A2">
    <div><div class="prog"><i style="width:33%"></i></div><p class="mut" style="margin-top:6px">Paso 1 de 3 · Identifícate</p></div>
-   <h2>¿Cuál es tu número de control?</h2>
-   <div><label for="nc">Número de control</label><input type="text" id="nc" inputmode="numeric" placeholder="Ejemplo: 99660001" value="99660001"> <p class="mut" style="margin-top:8px">Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p><p id="nc-err" class="mut" style="color:#B4442F;display:none;margin-top:6px">No encontramos ese número. Revisa que tenga 8 dígitos y vuelve a intentarlo.</p></div>
+   <h2>Escribe tu número de control y tu NIP</h2>
+   <div><label for="nc">Número de control</label><input type="text" id="nc" inputmode="numeric" placeholder="Ejemplo: 99660001" value="99660001"><label for="nip" style="margin-top:12px">NIP (4 dígitos)</label><input type="password" id="nip" inputmode="numeric" maxlength="4" placeholder="El mismo NIP del SIIC" value="1234"> <p class="mut" style="margin-top:8px">Tu NIP es personal: no lo compartas. Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p><p id="nc-err" class="mut" style="color:#B4442F;display:none;margin-top:6px">Revisa tu número de control (8 dígitos) y tu NIP (4 dígitos) y vuelve a intentarlo.</p></div>
    <button class="btn" id="a2next">Continuar</button>
    <button class="btn sec" data-go="A1">Volver</button>
   </section>
@@ -228,7 +228,7 @@ function renderA5(){let h='';
 $('#net').onclick=()=>{online=!online;const n=$('#net');n.className='pill '+(online?'on':'off');n.textContent=online?'● En línea':'● Sin internet';renderA1();
  if(online&&pending){pending=0;regs.unshift({c:'Automatización de procesos con Python',s:0});toast('Conexión recuperada: tu registro se envió automáticamente.');const cur=$$('#phone [data-screen].on')[0].dataset.screen;if(cur==='A4b')showA('A4a');if(cur==='A5')renderA5();}};
 $$('[data-go]').forEach(b=>b.onclick=()=>showA(b.dataset.go));
-$('#a2next').onclick=()=>{const v=$('#nc').value.trim();if(!/^\d{8}$/.test(v)){$('#nc-err').style.display='block';return;}$('#nc-err').style.display='none';showA('A3');};
+$('#a2next').onclick=()=>{const v=$('#nc').value.trim();if(!/^\d{8}$/.test(v)||!/^\d{4}$/.test($('#nip').value.trim())){$('#nc-err').style.display='block';return;}$('#nc-err').style.display='none';showA('A3');};
 const Q=[['¿Qué lenguaje se usó en la demostración principal?',['Python','Cobol','Pascal']],['¿Qué problema resolvía el ejemplo?',['Registrar asistencia','Imprimir diplomas','Reservar salas']],['¿Qué formato se usó para el archivo de salida?',['CSV','DOCX','MP3']],['¿Cuántas personas intervenían en el flujo automatizado?',['Menos que antes','Más que antes','Igual que antes']],['¿Qué herramienta se mencionó para las notificaciones?',['Un bot','Una carta','Un fax']]];
 $('#qs').innerHTML=Q.map((q,i)=>'<div style="margin-bottom:10px"><label>'+(i+1)+'. '+q[0]+'</label>'+q[1].map(o=>'<label class="opt" style="font-weight:400"><input type="radio" name="q'+i+'"> '+o+'</label>').join('')+'</div>').join('');
 $('#a3send').onclick=()=>{if(online){showA('A4a');regs.unshift({c:'Automatización de procesos con Python',s:0});}else{pending=1;showA('A4b');}};
