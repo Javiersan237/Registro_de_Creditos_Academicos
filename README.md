@@ -3,7 +3,12 @@
 Registro de asistencia al Congreso Académico por QR, con validación automática, envío del Comité,
 CSV para el SIIC y avisos por correo y WhatsApp. **Todos los datos son simulados.**
 
-Parte del prototipo navegable del E3 (`../prototipo_frontend.html`, que no se modifica) y lo convierte
+**Ver la interfaz sin instalar nada:**
+[prototipo navegable en GitHub Pages](https://javiersan237.github.io/Registro_de_Creditos_Academicos/prototipo_frontend.html).
+Elige un rol arriba (Alumno, Profesor, Comité, Servicios Escolares); en el celular simulado, el botón
+«● En línea» permite probar el registro sin internet. Es solo navegación: no guarda ni envía datos.
+
+Este repositorio parte de ese prototipo navegable del E3 (`prototipo_frontend.html`) y lo convierte
 en una aplicación real con Django.
 
 ## Encender
