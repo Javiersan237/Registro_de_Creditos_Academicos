@@ -1,0 +1,100 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#00102E">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="{% static 'img/icon-192.png' %}">
+<link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/renueva.css' %}">
+<title>Renueva TI · Registro de asistencia</title>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="{% static 'img/isotipo.png' %}" alt=""><b>Renueva <span>TI</span></b></a>
+  <small>Registro de asistencia · Congreso Académico</small>
+</header>
+<main>
+ <div class="phone" id="phone">
+  <div class="bar"><b>Renueva TI</b><button class="pill on" id="net" title="Toca para simular que no hay internet">● En línea</button></div>
+
+  <!-- A1 Inicio -->
+  <section class="body" data-screen="A1">
+   <div id="a1conf"></div>
+   <div class="card"><h3>Estado de la app</h3><p id="a1status" class="mut">Preparando…</p></div>
+   <div id="a1pend"></div>
+   <button class="btn" id="a1start">Comenzar mi registro</button>
+   <button class="btn sec" data-go="A5">Ver mi estado</button>
+  </section>
+
+  <!-- A2 Identificación -->
+  <section class="body" data-screen="A2">
+   <div><div class="prog"><i style="width:33%"></i></div><p class="mut" style="margin-top:6px">Paso 1 de 3 · Identifícate</p></div>
+   <h2>¿Cuál es tu número de control?</h2>
+   <div id="a2form">
+    <label for="nc">Número de control</label>
+    <input type="text" id="nc" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Ejemplo: 99660001">
+    <p class="mut" style="margin-top:8px">Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p>
+    <p id="nc-err" class="msg err" style="display:none;margin-top:8px"></p>
+   </div>
+   <div id="a2confirm" class="card hl" style="display:none">
+    <h3 id="a2hola"></h3><p class="mut">¿Eres tú? Si no, corrige tu número.</p>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="a2si">Sí, soy yo</button><button class="btn sm sec" id="a2no">No, corregir</button></div>
+   </div>
+   <button class="btn" id="a2next">Continuar</button>
+   <button class="btn sec" data-go="A1">Volver</button>
+  </section>
+
+  <!-- A3 Cuestionario -->
+  <section class="body" data-screen="A3">
+   <div><div class="prog"><i style="width:66%"></i></div><p class="mut" style="margin-top:6px">Paso 2 de 3 · Cuestionario</p></div>
+   <h2>Cuéntanos qué aprendiste</h2>
+   <p class="mut">Tienes un solo intento. Lee con calma cada pregunta.</p>
+   <div id="qs"></div>
+   <p id="a3err" class="msg err" style="display:none"></p>
+   <button class="btn" id="a3send">Enviar mi registro</button>
+   <button class="btn sec" data-go="A2">Volver</button>
+  </section>
+
+  <!-- A4a Confirmación en línea -->
+  <section class="body" data-screen="A4a">
+   <div><div class="prog"><i style="width:100%"></i></div><p class="mut" style="margin-top:6px">Paso 3 de 3 · Listo</p></div>
+   <div id="a4amsg"></div>
+   <button class="btn" data-go="A5">Ver mi estado</button>
+   <button class="btn sec" data-go="A1">Salir</button>
+  </section>
+
+  <!-- A4b Guardado local -->
+  <section class="body" data-screen="A4b">
+   <div><div class="prog"><i style="width:100%"></i></div><p class="mut" style="margin-top:6px">Paso 3 de 3 · Guardado en tu celular</p></div>
+   <div class="msg local"><h2>Registro guardado localmente</h2><p style="margin-top:6px">Se enviará cuando haya conexión. No necesitas hacer nada más: la app lo enviará sola, incluso mañana.</p><p style="margin-top:8px"><span class="badge b-wait" id="a4bpend">1 pendiente de envío</span></p></div>
+   <p class="mut">Si cierras el navegador, el registro sigue guardado. Abre la app cuando tengas señal.</p>
+   <button class="btn" data-go="A5">Ver mi estado</button>
+   <button class="btn sec" data-go="A1">Salir</button>
+  </section>
+
+  <!-- A5 Mi estado -->
+  <section class="body" data-screen="A5">
+   <h2>Mi estado</h2>
+   <p class="mut">Tus registros y en qué paso va cada uno.</p>
+   <div id="a5list"></div>
+   <div class="card" id="a5consulta">
+    <h3>Consultar estado actualizado</h3>
+    <p class="mut" style="margin-bottom:8px">Te enviaremos un código de 6 dígitos a tu correo institucional.</p>
+    <div id="a5paso1"><label for="a5nc">Número de control</label><input type="text" id="a5nc" inputmode="numeric" maxlength="8">
+     <button class="btn sm" id="a5pedir" style="margin-top:8px">Enviarme el código</button></div>
+    <div id="a5paso2" style="display:none"><p class="mut" id="a5correo"></p><label for="a5cod">Código</label><input type="text" id="a5cod" inputmode="numeric" maxlength="6">
+     <button class="btn sm" id="a5ver" style="margin-top:8px">Ver mis registros</button></div>
+    <p id="a5err" class="msg err" style="display:none;margin-top:8px"></p>
+   </div>
+   <button class="btn sec" data-go="A1">Volver al inicio</button>
+  </section>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+ </div>
+</main>
+<script src="{% static 'js/idb.js' %}"></script>
+<script src="{% static 'js/alumno.js' %}"></script>
+</body>
+</html>

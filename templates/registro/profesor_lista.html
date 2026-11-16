@@ -1,0 +1,14 @@
+{% extends "registro/base.html" %}
+{% block title %}Profesor designado{% endblock %}
+{% block bartitle %}Renueva TI · Mis conferencias{% endblock %}
+{% block content %}
+<p class="mut" style="margin-bottom:12px">Elige la conferencia para mostrar su QR. El QR cambia cada minuto y solo funciona durante el horario de la conferencia.</p>
+<table>
+ <tr><th>Conferencia</th><th>Fecha</th><th>Horario</th><th>Lugar</th><th>Estado</th><th></th></tr>
+ {% for c in conferencias %}
+ <tr><td>{{ c.nombre }}</td><td>{{ c.fecha|date:"d/m/Y" }}</td><td>{{ c.hora_inicio|time:"H:i" }} a {{ c.hora_fin|time:"H:i" }} h</td><td>{{ c.lugar }}</td>
+  <td>{% with e=c.estado %}<span class="badge {% if e == 'Activa' %}b-ok{% elif e == 'Programada' %}b-info{% else %}b-wait{% endif %}">{{ e }}</span>{% endwith %}</td>
+  <td><a class="btn sm" href="{% url 'profesor_panel' c.pk %}">Abrir panel</a></td></tr>
+ {% empty %}<tr><td colspan="6" class="mut">No tienes conferencias asignadas. El Comité Académico te asigna al crear la conferencia.</td></tr>{% endfor %}
+</table>
+{% endblock %}

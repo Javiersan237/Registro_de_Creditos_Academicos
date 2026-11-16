@@ -1,0 +1,26 @@
+test_sin_cuestionario_se_rechaza | TC01_Conferencia.test_sin_cuestionario_se_rechaza) ... ok
+test_paquete_un_qr_distinto_por_minuto | TC02_QR.test_paquete_un_qr_distinto_por_minuto) ... ok
+test_qr_alterado_rechazado | TC02_QR.test_qr_alterado_rechazado) ... ok
+test_ventana | TC02_QR.test_ventana) ... ok
+test_carga | TC03_Padron.test_carga) ... ok
+test_columna_faltante | TC03_Padron.test_columna_faltante) ... ok
+test_api_identificar | TC04_Identificacion.test_api_identificar) ... ok
+test_intentos | TC05_Cuestionario.test_intentos) ... ok
+test_asistido | TC07_Asistido.test_asistido) ... ok
+test_idempotencia_api | TC08_Sincronizacion.test_idempotencia_api) ... ok
+test_registro_no_valido_avisa | TC09_Validacion.test_registro_no_valido_avisa) ... ok
+test_tabla_de_decision | TC09_Validacion.test_tabla_de_decision) ... ok
+test_tope_de_tiempo_minimo | TC09_Validacion.test_tope_de_tiempo_minimo) ... ok
+test_credito | TC10_Credito.test_credito) ... ok
+test_estado_no_muestra_minimo | TC10_Credito.test_estado_no_muestra_minimo) ... ok
+test_suma | TC11_Tablero.test_suma) ... ok
+test_enviar_una_vez | TC12_Enviar.test_enviar_una_vez) ... ok
+test_columna_vacia_bloquea | TC13_CSV.test_columna_vacia_bloquea) ... ok
+test_csv | TC13_CSV.test_csv) ... ok
+test_confirmar_avisa_por_correo_y_whatsapp | TC14_Avisos.test_confirmar_avisa_por_correo_y_whatsapp) ... ok
+test_falla_exige_motivo_y_avisa | TC14_Avisos.test_falla_exige_motivo_y_avisa) ... ok
+test_modo_prueba_no_envia_fuera_de_lista | TC14_Avisos.test_modo_prueba_no_envia_fuera_de_lista) ... ok
+test_whatsapp_falla_queda_registrado_y_correo_sale | TC14_Avisos.test_whatsapp_falla_queda_registrado_y_correo_sale) ... Aviso 2 (whatsapp) falló: Servicio de WhatsApp respondió 503: sin sesión
+test_roles | TC15_Roles.test_roles) ... ok
+Ran 25 tests in 64.639s
+OK

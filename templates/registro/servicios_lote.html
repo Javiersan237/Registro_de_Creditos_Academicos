@@ -1,0 +1,52 @@
+{% extends "registro/base.html" %}
+{% block title %}Lote {{ lote.codigo }}{% endblock %}
+{% block bartitle %}Renueva TI · Servicios Escolares{% endblock %}
+{% block barright %}<span class="badge b-info">Lote #{{ lote.codigo }}</span>{% endblock %}
+{% block content %}
+<p><a class="btn sec sm" href="{% url 'servicios' %}">← Lotes</a></p>
+<div class="card hl" style="margin:12px 0">
+ <h3>Lote recibido del Comité Académico</h3>
+ <p class="mut">Enviado {{ lote.enviado|date:"d/m/Y H:i" }} por {{ lote.enviado_por.get_full_name|default:lote.enviado_por.username }} · {{ n }} registros válidos · Estado: <b>{{ lote.get_estado_display }}</b>
+ {% if lote.confirmado %} · {{ lote.confirmado|date:"d/m/Y H:i" }} por {{ lote.confirmado_por.get_full_name|default:lote.confirmado_por.username }}{% endif %}</p>
+ {% if lote.motivo_falla %}<p class="mut">Motivo de la falla: {{ lote.motivo_falla }}</p>{% endif %}
+</div>
+
+{% if problemas %}
+ <div class="msg err" style="margin-bottom:12px"><b>No se puede descargar todavía.</b> Hay filas con columnas obligatorias vacías:
+  <ul>{% for f, cols in problemas %}<li>Fila {{ f }}: {{ cols|join:", " }}</li>{% endfor %}</ul></div>
+{% else %}
+ <p style="margin-bottom:10px"><a class="btn sm" href="{% url 'lote_csv' lote.pk %}">Descargar CSV para el SIIC</a>
+ <span class="mut">{{ n }} filas · UTF-8 · descargado {{ lote.exportaciones }} vez(es)</span></p>
+{% endif %}
+<p class="mut" style="margin-bottom:6px">Vista previa (primeras {{ filas|length }} filas):</p>
+<div class="scroll"><table style="font-size:12px">
+ <tr>{% for c in columnas %}<th>{{ c }}</th>{% endfor %}</tr>
+ {% for f in filas %}<tr>{% for v in f.values %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+
+<div class="card" style="margin-top:14px">
+ <h3>Después de cargarlo en el SIIC</h3>
+ {% if lote.estado == 'cargado' %}
+  <div class="msg ok">Carga confirmada. Los alumnos ya fueron avisados por correo y WhatsApp.</div>
+ {% else %}
+ <div class="row" style="align-items:flex-start">
+  <form method="post" action="{% url 'lote_confirmar' lote.pk %}" onsubmit="this.querySelector('button').disabled=true">{% csrf_token %}
+   <button class="btn ok sm" type="submit">Se cargó bien</button>
+   <p class="mut" style="margin-top:6px">Avisa a cada alumno por WhatsApp y correo.</p></form>
+  <form method="post" action="{% url 'lote_falla' lote.pk %}" style="flex:2">{% csrf_token %}
+   <label for="motivo">¿Hubo una falla? Escribe el motivo</label>
+   <input type="text" id="motivo" name="motivo" placeholder="Ej. El SIIC rechazó el archivo por formato de fecha" required>
+   <button class="btn warn sm" type="submit" style="margin-top:8px">Reportar falla</button>
+   <p class="mut" style="margin-top:6px">Se avisará a los alumnos con el motivo y el contacto: {{ contacto }}</p></form>
+ </div>
+ {% endif %}
+</div>
+
+{% if avisos %}
+<div class="card" style="margin-top:14px"><h3>Avisos de este lote</h3>
+ <table style="font-size:13px"><tr><th>Hora</th><th>Alumno</th><th>Canal</th><th>Tipo</th><th>Estado</th></tr>
+ {% for a in avisos %}<tr><td>{{ a.creado|date:"H:i:s" }}</td><td>{{ a.alumno.no_control }}</td><td>{{ a.get_canal_display }}</td><td>{{ a.tipo }}</td>
+  <td><span class="badge {% if a.estado == 'enviado' %}b-ok{% elif a.estado == 'error' %}b-bad{% elif a.estado == 'simulado' %}b-info{% else %}b-wait{% endif %}">{{ a.get_estado_display }}</span>{% if a.error %}<br><span class="mut">{{ a.error|truncatechars:90 }}</span>{% endif %}</td></tr>{% endfor %}
+ </table></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "registro/base.html" %}
+{% block title %}Sin permiso{% endblock %}
+{% block bartitle %}Esta pantalla es de otro rol{% endblock %}
+{% block content %}
+<div class="msg err"><h2>No tienes acceso a esta sección</h2>
+<p style="margin-top:6px">Tu usuario no tiene el rol necesario. Regresa a tu <a href="{% url 'inicio' %}">pantalla de inicio</a> o entra con otra cuenta.</p></div>
+{% endblock %}

@@ -1,0 +1,5 @@
+<div class="tabs">
+ <a href="{% url 'comite' %}" {% if request.resolver_match.url_name == 'comite' %}class="on"{% endif %}>Conferencias</a>
+ <a href="{% url 'tablero' %}" {% if request.resolver_match.url_name in 'tablero,detalle_carrera' %}class="on"{% endif %}>Tablero por carrera</a>
+ <a href="{% url 'bitacora' %}">Bitácora</a>
+</div>

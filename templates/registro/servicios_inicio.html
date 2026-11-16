@@ -1,0 +1,31 @@
+{% extends "registro/base.html" %}
+{% block title %}Servicios Escolares{% endblock %}
+{% block bartitle %}Renueva TI · Servicios Escolares{% endblock %}
+{% block content %}
+<div class="tabs"><a class="on" href="{% url 'servicios' %}">Lotes y padrón</a><a href="{% url 'avisos' %}">Avisos enviados</a><a href="{% url 'bitacora' %}">Bitácora</a></div>
+<h3>Lotes recibidos del Comité Académico</h3>
+<table style="margin-bottom:18px">
+ <tr><th>Lote</th><th>Enviado</th><th>Registros</th><th>Estado</th><th></th></tr>
+ {% for l in lotes %}
+ <tr><td>{{ l.codigo }}</td><td>{{ l.enviado|date:"d/m/Y H:i" }} · {{ l.enviado_por.get_full_name|default:l.enviado_por.username }}</td><td>{{ l.n }}</td>
+  <td><span class="badge {% if l.estado == 'cargado' %}b-ok{% elif l.estado == 'falla' %}b-bad{% else %}b-wait{% endif %}">{{ l.get_estado_display }}</span></td>
+  <td><a class="btn sm" href="{% url 'lote_detalle' l.pk %}">Abrir</a></td></tr>
+ {% empty %}<tr><td colspan="5" class="mut">Todavía no llega ningún lote. Aparecerá aquí cuando el Comité presione «Enviar».</td></tr>{% endfor %}
+</table>
+
+<div class="card">
+ <h3>Cargar o actualizar el padrón de alumnos</h3>
+ <p class="mut">Hay {{ n_alumnos }} alumnos en el padrón. El archivo debe ser CSV UTF-8 con estas columnas en la primera fila:</p>
+ <pre style="margin:8px 0">{{ columnas }}</pre>
+ <form method="post" enctype="multipart/form-data" class="row" style="align-items:flex-end">{% csrf_token %}
+  <div style="flex:3">{{ form.archivo.label_tag }}{{ form.archivo }}</div>
+  <div style="flex:0 0 auto"><button class="btn sm" type="submit">Cargar padrón</button></div>
+ </form>
+ {% if resultado %}
+  <div class="msg {% if resultado.rechazadas %}local{% else %}ok{% endif %}" style="margin-top:12px">
+   <b>{{ resultado.aceptadas }} filas aceptadas · {{ resultado.rechazadas|length }} rechazadas</b>
+   {% if resultado.rechazadas %}<ul style="margin:6px 0 0">{% for fila, motivo in resultado.rechazadas %}<li>Fila {{ fila }}: {{ motivo }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+ {% endif %}
+</div>
+{% endblock %}

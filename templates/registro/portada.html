@@ -1,0 +1,18 @@
+{% extends "registro/base.html" %}{% load static %}
+{% block title %}Inicio{% endblock %}
+{% block bartitle %}Registro de asistencia al Congreso Académico{% endblock %}
+{% block content %}
+<div class="row" style="align-items:center;margin-bottom:18px">
+  <div style="flex:2"><img src="{% static 'img/logo_horizontal.png' %}" alt="Renueva TI" style="max-width:100%;border-radius:12px"></div>
+  <div style="flex:3">
+    <h2>Validación, concentración y registro de créditos por asistencia al Congreso Académico</h2>
+    <p class="mut" style="margin-top:8px">El alumno se registra con un QR, aunque no haya internet; el sistema valida, el Comité envía y Servicios Escolares recibe un archivo listo para el SIIC. Al final, el alumno recibe un aviso por correo y WhatsApp.</p>
+  </div>
+</div>
+<div class="grid2">
+  <div class="card hl"><h3>Alumno</h3><p class="mut">Registro por QR, cuestionario y «Mi estado». Funciona en el celular, sin instalar nada.</p><p style="margin-top:10px"><a class="btn sm" href="/app/">Abrir la app del alumno</a></p></div>
+  <div class="card"><h3>Profesor designado</h3><p class="mut">Muestra el QR que cambia cada minuto y registra alumnos con apoyo.</p><p style="margin-top:10px"><a class="btn sm sec" href="{% url 'profesor' %}">Entrar</a></p></div>
+  <div class="card"><h3>Comité Académico</h3><p class="mut">Crea conferencias, revisa el tablero por carrera y presiona «Enviar».</p><p style="margin-top:10px"><a class="btn sm sec" href="{% url 'comite' %}">Entrar</a></p></div>
+  <div class="card"><h3>Servicios Escolares</h3><p class="mut">Carga el padrón, descarga el CSV para el SIIC y confirma la carga.</p><p style="margin-top:10px"><a class="btn sm sec" href="{% url 'servicios' %}">Entrar</a></p></div>
+</div>
+{% endblock %}

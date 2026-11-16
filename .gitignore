@@ -1,0 +1,19 @@
+.env
+.venv/
+db.sqlite3
+outbox/
+backups/
+staticfiles/
+server.log
+__pycache__/
+*.pyc
+whatsapp_service/node_modules/
+whatsapp_service/.sesion/
+whatsapp_service/.wwebjs_cache/
+carga.sqlite3*
+db.sqlite3-*
+*.log
+
+# Evidencias con datos personales (correos, telefonos, conversaciones): no van al repositorio publico
+evidencias_e4/Correo_*
+evidencias_e4/WhatsApp_*
