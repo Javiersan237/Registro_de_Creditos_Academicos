@@ -17,3 +17,10 @@ db.sqlite3-*
 # Evidencias con datos personales (correos, telefonos, conversaciones): no van al repositorio publico
 evidencias_e4/Correo_*
 evidencias_e4/WhatsApp_*
+
+# Laptop portátil: Python descargado y datos del día (llevan claves)
+laptop/python/
+laptop/datos/*
+!laptop/datos/.gitkeep
+laptop/evidencias/*
+!laptop/evidencias/.gitkeep
