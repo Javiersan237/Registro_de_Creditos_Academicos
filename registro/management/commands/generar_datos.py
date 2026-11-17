@@ -3,13 +3,16 @@
   python manage.py generar_datos
   python manage.py generar_datos --telefono 4881234567 --correo tu_correo@matehuala.tecnm.mx
 
+--inicio/--fin fijan el horario de la conferencia de hoy (por ejemplo, --inicio 07:30 --fin 15:00 para
+dejarla abierta toda la jornada de pruebas); sin ellos empieza hace 10 minutos y dura 90.
 --telefono/--correo se asignan SOLO al alumno de prueba 99660001 para recibir los avisos.
 El NIP del alumno de prueba es 1234 (o el de --nip); el de los demás son los 4 últimos dígitos de su
 número de control al revés (99660002 -> 2000).
 Los demás alumnos usan correos @ejemplo.test (dominio reservado, no se entregan) y sin teléfono.
 """
+import os
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
@@ -48,6 +51,8 @@ class Command(BaseCommand):
                             help="Grupo de ejemplo del alumno de prueba (o DEMO_GRUPO en .env)")
         parser.add_argument("--password", default="(contraseña retirada)", help="Contraseña de los usuarios de demostración")
         parser.add_argument("--alumnos", type=int, default=60)
+        parser.add_argument("--inicio", default="", help="Hora de inicio HH:MM de la conferencia de hoy")
+        parser.add_argument("--fin", default="", help="Hora de fin HH:MM de la conferencia de hoy")
         parser.add_argument("--sin-historial", action="store_true", help="No crear registros de la conferencia de ayer")
 
     def handle(self, *args, **o):
@@ -96,6 +101,12 @@ class Command(BaseCommand):
         fin_hoy = inicio_hoy + timedelta(minutes=90)
         if fin_hoy.date() != inicio_hoy.date():  # cerca de medianoche
             inicio_hoy, fin_hoy = inicio_hoy.replace(hour=0, minute=0), inicio_hoy.replace(hour=23, minute=0)
+        if o["inicio"] or o["fin"]:  # horario fijo para una jornada de pruebas
+            def hora(texto, base):
+                h = datetime.strptime(texto, "%H:%M")
+                return base.replace(hour=h.hour, minute=h.minute)
+            inicio_hoy = hora(o["inicio"], inicio_hoy) if o["inicio"] else inicio_hoy
+            fin_hoy = hora(o["fin"], inicio_hoy) if o["fin"] else inicio_hoy + timedelta(minutes=90)
         ayer = (ahora - timedelta(days=1)).date()
 
         c_ayer, nueva_ayer = Conferencia.objects.get_or_create(
