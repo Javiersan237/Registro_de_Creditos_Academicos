@@ -78,12 +78,16 @@ es un cambio que puede realizarse a decisión de la empresa: el separador y la c
 - **Con HTTPS (para probar modo avión):** túnel gratuito `cloudflared tunnel --url http://localhost:8000`
   y agrega la dirección `https://…trycloudflare.com` a `CSRF_TRUSTED_ORIGINS` en `.env`.
 
+- **Laptop del profesor sin internet (modo B, TC-20) sin instalar nada:** carpeta [`laptop/`](laptop/LEEME.md).
+  `0_PREPARAR_LAPTOP.bat` baja un Python portátil dentro de esa carpeta; `1_ENCENDER_LAPTOP.bat` sirve el registro en la
+  red local y el panel del profesor sincroniza con el servidor central al reconectar.
+
 ## Comandos
 
 | Comando | Para qué |
 |---------|----------|
 | `python manage.py test registro -v 2` | 29 pruebas automáticas (TC-01 a TC-15 del E3) |
-| `python manage.py generar_datos` | Padrón, usuarios, conferencias y registros simulados |
+| `python manage.py generar_datos [--inicio 07:30 --fin 15:00]` | Padrón, usuarios, conferencias y registros simulados |
 | `python manage.py respaldar` / `restaurar <archivo>` | Respaldo y restauración (NFR-08) |
 | `python manage.py reenviar_avisos` | Reintenta avisos con error (CU-07 3a) |
 
