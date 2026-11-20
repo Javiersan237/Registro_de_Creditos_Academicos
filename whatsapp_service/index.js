@@ -50,8 +50,25 @@ cliente.on('qr', async qr => {
   qrActual = await QRCode.toDataURL(qr, { width: 320, margin: 2 });
   console.log('[WhatsApp] ' + detalle);
 });
-cliente.on('authenticated', () => { detalle = 'Autenticado, cargando chats…'; console.log('[WhatsApp] Autenticado'); });
+// D-15: al reconectar con la sesión guardada, whatsapp-web.js a veces se queda en «Autenticado» y el evento
+// «ready» nunca llega (falla conocida de la librería en 2026). Guardián: si en 90 s no queda listo, se reinicia
+// el cliente con la misma sesión (sin pedir QR), hasta 5 veces.
+let guardian = null, reintentos = 0;
+function vigilarListo() {
+  clearTimeout(guardian);
+  guardian = setTimeout(async () => {
+    if (listo || reintentos >= 5) return;
+    reintentos++;
+    detalle = `No terminó de cargar; reintento ${reintentos} de 5…`;
+    console.warn('[WhatsApp] ' + detalle);
+    try { await cliente.destroy(); } catch (e) { }
+    cliente.initialize().catch(e => { detalle = 'No se pudo reiniciar: ' + e.message; console.error(e); });
+  }, 90000);
+}
+cliente.on('loading_screen', (pct, msg) => console.log(`[WhatsApp] Cargando ${pct}% ${msg || ''}`));
+cliente.on('authenticated', () => { detalle = 'Autenticado, cargando chats…'; console.log('[WhatsApp] Autenticado'); vigilarListo(); });
 cliente.on('ready', () => {
+  clearTimeout(guardian); reintentos = 0;
   listo = true; qrActual = null;
   detalle = 'Conectado como ' + (cliente.info?.wid?.user || 'número vinculado');
   console.log('[WhatsApp] ' + detalle);
@@ -69,6 +86,7 @@ cliente.on('disconnected', r => {
    Lo que el dueño del número se escribe en su chat «Tú» se pasa al servidor local «Voz a Claude»,
    que lo pega en la ventana de Claude. Los mensajes de otras personas se ignoran. */
 const PUENTE = process.env.WHATSAPP_PUENTE_CLAUDE === '1';
+const misIds = new Set((process.env.WHATSAPP_MI_LID || '').split(',').map(s => s.trim()).filter(Boolean));
 const MARCA_RESPUESTA = '🤖';   // las respuestas de Claude empiezan así y no se reenvían (evita bucles)
 function vozPin() {
   try {
@@ -89,7 +107,22 @@ function alPuente(ruta, cuerpo, tipo) {
 if (PUENTE) {
   cliente.on('message_create', async msg => {
     try {
-      if (!msg.fromMe || msg.to !== msg.from) return;              // solo mi chat conmigo mismo
+      if (!msg.fromMe) return;
+      // Solo mi chat conmigo mismo. Con los identificadores nuevos de WhatsApp (@lid) «from» y «to» pueden
+      // venir en formatos distintos, así que también se compara contra mi número y el id del chat.
+      const yo = cliente.info?.wid?.user || '';
+      const usuario = id => String(id || '').split('@')[0].split(':')[0];
+      // Mis identificadores: el número (@c.us) y el id nuevo (@lid). El @lid se aprende de mis propios mensajes
+      // (cuando «to» y «from» son iguales) o se fija con WHATSAPP_MI_LID en .env.
+      misIds.add(yo);
+      if (msg.to === msg.from) misIds.add(usuario(msg.to));
+      let esMio = msg.to === msg.from || (misIds.has(usuario(msg.to)) && misIds.has(usuario(msg.from)));
+      if (!esMio) {
+        const chat = await msg.getChat().catch(() => null);
+        esMio = !!chat && (usuario(chat.id?._serialized) === yo || usuario(chat.id?._serialized) === usuario(msg.from));
+      }
+      if (process.env.WHATSAPP_PUENTE_DEBUG === '1') console.log(`[Puente] fromMe to=${msg.to} from=${msg.from} tipo=${msg.type} mio=${esMio}`);
+      if (!esMio) return;
       if ((msg.body || '').startsWith(MARCA_RESPUESTA)) return;     // respuesta de Claude
       if (msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')) {
         const m = await msg.downloadMedia();

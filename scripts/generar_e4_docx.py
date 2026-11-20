@@ -30,9 +30,11 @@ REPO = "https://github.com/Javiersan237/Registro_de_Creditos_Academicos"
 PAGES = "https://javiersan237.github.io/Registro_de_Creditos_Academicos/prototipo_frontend.html"
 EN_LINEA = "https://javiersan237.pythonanywhere.com/app/"
 VIDEO = "[COMPLETAR: enlace al video corto del recorrido de la sección 1.5]"
-FECHA_PRUEBAS = "[COMPLETAR: fecha de las pruebas con usuarios]"
-TC20 = None   # p. ej. "Laptop sin internet y 3 celulares: 3 de 3 guardados en la laptop; al conectarla, «Sincronizado: 3» ..."
-NIP_CELULAR = None   # p. ej. "Celular en modo avión con NIP correcto: llegó válido; con NIP equivocado (99660041): rechazado al sincronizar"
+FECHA_PRUEBAS = "19 de noviembre de 2026"
+TC20 = None   # Parcial por decisión del consultor (19/11/2026): 5 celulares se conectaron a la laptop, pero no sincronizó con el central (la laptop tenía la dirección del túnel anterior)
+NIP_CELULAR = ("Probado en celular el 19/11/2026: registro hecho en modo avión con NIP equivocado; al volver la conexión se "
+               "sincronizó y quedó «No se pudo registrar · El NIP no coincide con ese número de control», sin folio "
+               "(evidencia TC04_nip_equivocado_sin_internet_rechazado.jpg)")
 NAVY, GRIS, CIAN = "00102E", "5A6475", "2DCAE3"
 
 
@@ -56,10 +58,13 @@ SUS = leer_sus()
 if SUS:
     _n = len(SUS)
     SUS_PROM = sum(x["sus"] for x in SUS) / _n
-    T1_PROM = sum(int(x["t1_seg"]) for x in SUS) / _n
-    T1_META = sum(1 for x in SUS if _si(x["t1_ok"]) and not _si(x["t1_ayuda"]) and int(x["t1_seg"]) <= 120)
+    _con_t1 = [x for x in SUS if str(x.get("t1_seg") or "").strip()]   # quien no tiene tiempo anotado no entra al promedio
+    _nt = len(_con_t1) or 1
+    T1_PROM = sum(int(x["t1_seg"]) for x in _con_t1) / _nt
+    T1_META = sum(1 for x in _con_t1 if _si(x["t1_ok"]) and not _si(x["t1_ayuda"]) and int(x["t1_seg"]) <= 120)
     T2_EXPLICO = sum(_si(x["t2_explico"]) for x in SUS)
-    M4_TXT = f"{T1_PROM / 60:.1f} min en promedio ({T1_PROM:.0f} s); {T1_META} de {_n} en 2 min o menos sin ayuda (medido)"
+    _sin_t = f" ({_n - len(_con_t1)} sin tiempo anotado)" if len(_con_t1) < _n else ""
+    M4_TXT = f"{T1_PROM / 60:.1f} min en promedio ({T1_PROM:.0f} s, {len(_con_t1)} de {_n} con tiempo{_sin_t}); {T1_META} de {_n} en 2 min o menos sin ayuda (medido)"
     M7_TXT = f"{SUS_PROM:.1f} de 100 en promedio con {_n} participantes (mínimo {min(x['sus'] for x in SUS):.1f})"
     M4_EST = "Cumplida" if T1_PROM <= 120 else "No cumplida"
     M7_EST = "Cumplida" if SUS_PROM >= 70 else "No cumplida"
@@ -226,7 +231,7 @@ par("Este entregable presenta la automatización de Renueva TI funcionando con d
     "Parte del prototipo navegable del E3, que se conserva sin cambios, y lo convierte en una aplicación real.")
 tabla(["Requisito del E4", "Dónde se cumple", "Estado"], [
     ["Automatización o prototipo funcional con datos simulados", "Sección 1 (enlace, repositorio y video en 1.6)", "Cumplido" + ("" if "COMPLETAR" not in EN_LINEA + VIDEO else " · enlace y video [COMPLETAR]")],
-    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 29 pruebas automáticas y registro de defectos", RESUMEN_CASOS],
+    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 30 pruebas automáticas y registro de defectos", RESUMEN_CASOS],
     ["Prueba de usabilidad con al menos 5 usuarios reales y SUS", "Sección 3: protocolo, tareas, cuestionario y resultados", f"Cumplido: {len(SUS)} participantes, SUS de {SUS_PROM:.1f}" if SUS else "Pendiente: la aplica el consultor"],
     ["Métricas medidas antes y después", "Sección 4: 9 métricas", "Cumplido: 9 medidas" if SUS else "Parcial: 7 medidas, 2 por medir con usuarios"],
     ["Borrador completo del libro con todas las secciones", "Sección 5: estado de las secciones 0 a 15", "Parcial: se integra para la entrega final"],
@@ -264,7 +269,7 @@ tabla(["Necesidad (E3)", "Elegida en el E3", "Implementado en el E4", "Cambio y 
     ["N7 Correo", "SMTP institucional (Gmail de pruebas en el prototipo)", "SMTP de Gmail de pruebas; sin credenciales, los correos se guardan en archivos", "Sin cambio. Envío real probado (TC-14)."],
     ["N8 WhatsApp", "Biblioteca no oficial de WhatsApp Web", "whatsapp-web.js 1.34.8 en un servicio Node.js 26", "Sin cambio. Django le habla por HTTP local con un token."],
     ["N10 Versiones", "Git + GitHub", "Repositorio público en GitHub con ramas main y develop", "Sin cambio. No contiene datos reales: correos, teléfonos y claves van en un archivo .env que no se sube."],
-    ["N11 Pruebas", "unittest de Django", "unittest de Django (29 pruebas) + Playwright para el recorrido con capturas", "Nuevo: Playwright solo para generar evidencia; no forma parte del producto."],
+    ["N11 Pruebas", "unittest de Django", "unittest de Django (30 pruebas) + Playwright para el recorrido con capturas", "Nuevo: Playwright solo para generar evidencia; no forma parte del producto."],
 ], anchos=[2.8, 3.4, 4.6, 6.2])
 
 h2("1.3 Seguridad de los avisos durante las pruebas")
@@ -366,14 +371,14 @@ casos = [
     ["TC-17", "NFR-01, FR-06", TC17_TXT, TC17_EST],
     ["TC-18", "NFR-05", "200 registros simultáneos, 3 corridas: 200 de 200 guardados, 100 % en 3 s o menos, p95 de 1.68 a 1.78 s", "Aprobado"],
     ["TC-19", "NFR-02, NFR-03", "360 px sin desbordes en Chrome 157 y Edge 157; contraste mínimo 4.63:1 (botón azul); texto mínimo de 16 px en las pantallas del alumno", "Aprobado (tras corregir D-01 y D-10)"],
-    ["TC-20", "FR-24", TC20 or "Laptop sin internet y 3 celulares en su red local: [COMPLETAR con la prueba]. Probado en la computadora del consultor: 3 registros en la laptop, «Sincronizado: 3» y los 3 válidos en el servidor central; usa la misma API idempotente de TC-08", "Aprobado" if TC20 else "Parcial"],
+    ["TC-20", "FR-24", TC20 or "El 19/11/2026, 5 celulares se conectaron a la red local de la laptop (modo B), pero los registros no llegaron al servidor central: la laptop tenía la dirección del túnel de una sesión anterior (falla de operación, se corrige actualizando CENTRAL_URL antes de la jornada). Probado en la computadora del consultor: 3 registros en la laptop, «Sincronizado: 3» y los 3 válidos en el servidor central; usa la misma API idempotente de TC-08", "Aprobado" if TC20 else "Parcial"],
 ]
 tabla(["Caso", "Requisitos", "Resultado obtenido", "Estado"], casos, anchos=[1.4, 3.0, 9.6, 3.0], colores=(3,))
 par(f"**Resumen:** {RESUMEN_CASOS}.")
 
 h2("2.1 Pruebas automáticas")
-par("Las 29 pruebas automáticas se ejecutan con «python manage.py test registro» y repiten los casos cada vez que "
-    "cambia el código. Resultado de la última ejecución (18 nov): **29 de 29 aprobadas**.")
+par("Las 30 pruebas automáticas se ejecutan con «python manage.py test registro» y repiten los casos cada vez que "
+    "cambia el código. Resultado de la última ejecución (19 nov): **30 de 30 aprobadas**.")
 tabla(["Grupo", "Pruebas", "Qué comprueban"], [
     ["TC01_Conferencia", "2", "Créditos 2 y 3; conferencia sin cuestionario"],
     ["TC02_QR", "3", "Un QR distinto por minuto; ventana; QR alterado o de otro minuto"],
@@ -406,8 +411,11 @@ tabla(["ID", "Defecto", "Detectado en", "Corrección", "Estado"], [
     ["D-10", "La consola de Windows no podía mostrar el carácter «→» del comando de datos.", "generar_datos", "Se cambió por «->».", "Corregido"],
     ["D-11", "El archivo que enciende el servicio de WhatsApp buscaba Node.js en una ruta equivocada.", "Arranque del servicio", "Se corrigió la ruta de Node.js.", "Corregido"],
     ["D-12", "El comando que genera los datos de prueba fallaba al leer el nombre del profesor de ejemplo, y no permitía elegir el horario de la conferencia.", "Preparación de la jornada de pruebas", "Se corrigió y se agregaron las opciones de hora de inicio y fin.", "Corregido"],
+    ["D-13", "En la prueba con usuarios, 8 de 10 registros quedaron «No válido · Respondió demasiado rápido»: la app no mostraba el tiempo mínimo de RN-15 (20 s por pregunta) ni impedía enviar antes. Lo señaló P3 en sus comentarios.", "TC-17 (usuarios reales)", "La app recibe el tiempo mínimo con el paquete de la conferencia, muestra «Podrás enviar en m:ss» y habilita el botón al cumplirse; prueba automática nueva.", "Corregido"],
+    ["D-14", "En la prueba con usuarios, la app del alumno aparecía dentro de un dibujo de teléfono (marco negro) en los celulares de pantalla ancha y en PC; solo se quitaba en pantallas de menos de 420 px.", "TC-17 (usuarios reales)", "Diseño responsive: en celular (hasta 640 px, también en horizontal) ocupa toda la pantalla; en tablet y PC es una tarjeta centrada. Revisado en 360, 430, 640, 820 y 1366 px.", "Corregido"],
+    ["D-15", "Al reiniciar el servicio de WhatsApp con la sesión guardada, se quedaba en «Autenticado, cargando chats» y nunca quedaba listo para enviar avisos (falla conocida de la biblioteca whatsapp-web.js en 2026); además, al apagarlo a la fuerza se perdía la sesión y había que volver a escanear el QR.", "Operación del servicio de avisos", "Guardián que reinicia el cliente si no queda listo en 90 s (hasta 5 veces) y apagado ordenado (POST /apagar) que conserva la sesión; se reconecta solo, sin QR.", "Corregido"],
 ], anchos=[1.2, 6.0, 2.6, 5.2, 2.0], colores=(4,))
-nota("Defectos encontrados: 12. Corregidos: 12. Abiertos de tipo Must: 0.")
+nota("Defectos encontrados: 15. Corregidos: 15. Abiertos de tipo Must: 0.")
 
 # ---------------------------------------------------------------- 3
 h1("3. Prueba de usabilidad y SUS")
