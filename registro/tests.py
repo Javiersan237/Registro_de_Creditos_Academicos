@@ -222,6 +222,12 @@ class TC05_Cuestionario(Base):
         self.assertEqual(r2.pk, r1.pk)
         self.assertEqual(Registro.objects.count(), 1)
 
+    def test_paquete_trae_tiempo_minimo(self):
+        """D-13 (pruebas con usuarios): la app debe conocer el tiempo mínimo para mostrar cuánto falta."""
+        j = self.client.get(f"/api/paquete/{self.conf.pk}").json()
+        self.assertEqual(j["tiempo_minimo_seg"], 100)   # 5 preguntas × 20 s (RN-15)
+        self.assertEqual(j["tiempo_minimo_seg"], validacion.tiempo_minimo(5, self.cfg))
+
 
 class TC08_Sincronizacion(Base):
     """TC-08 · FR-23, NFR-11 · 10 registros reenviados llegan una sola vez."""
