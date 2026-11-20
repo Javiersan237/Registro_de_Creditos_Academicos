@@ -65,6 +65,7 @@ cliente.on('disconnected', r => {
   }, 5000);
 });
 
+
 async function enviar(telefono, mensaje) {
   const digitos = String(telefono || '').replace(/\D/g, '');
   if (digitos.length !== 10) throw Object.assign(new Error('El teléfono debe tener 10 dígitos'), { status: 400 });
@@ -96,6 +97,12 @@ const servidor = http.createServer((req, res) => {
   }
   if (req.headers['x-token'] !== TOKEN) return responder(res, 401, { ok: false, error: 'Token inválido' });
   if (req.method === 'GET' && req.url === '/estado') return responder(res, 200, { listo, detalle });
+  if (req.method === 'POST' && req.url === '/apagar') {   // cierre ordenado: guarda la sesión antes de salir
+    responder(res, 200, { ok: true });
+    console.log('[WhatsApp] Apagando de forma ordenada…');
+    cliente.destroy().catch(() => { }).finally(() => process.exit(0));
+    return;
+  }
   if (req.method === 'POST' && req.url === '/enviar') {
     let cuerpo = '';
     req.on('data', c => { cuerpo += c; if (cuerpo.length > 20000) req.destroy(); });
