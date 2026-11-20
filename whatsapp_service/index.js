@@ -65,6 +65,46 @@ cliente.on('disconnected', r => {
   }, 5000);
 });
 
+/* Puente opcional con Claude Code (uso personal, WHATSAPP_PUENTE_CLAUDE=1 en .env; apagado por defecto).
+   Lo que el dueño del número se escribe en su chat «Tú» se pasa al servidor local «Voz a Claude»,
+   que lo pega en la ventana de Claude. Los mensajes de otras personas se ignoran. */
+const PUENTE = process.env.WHATSAPP_PUENTE_CLAUDE === '1';
+const MARCA_RESPUESTA = '🤖';   // las respuestas de Claude empiezan así y no se reenvían (evita bucles)
+function vozPin() {
+  try {
+    const cfg = process.env.VOZ_CONFIG || path.join(require('node:os').homedir(), 'Herramientas', 'VozAClaude', 'config.json');
+    return JSON.parse(fs.readFileSync(cfg, 'utf8')).pin;
+  } catch (e) { return ''; }
+}
+function alPuente(ruta, cuerpo, tipo) {
+  return new Promise((ok, mal) => {
+    const req = require('node:https').request({
+      host: '127.0.0.1', port: 8765, path: ruta, method: 'POST', rejectUnauthorized: false,
+      headers: { 'X-Pin': vozPin(), 'X-Origen': 'WhatsApp', 'Content-Type': tipo, 'Content-Length': cuerpo.length },
+    }, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => ok(r.statusCode + ' ' + d)); });
+    req.on('error', mal);
+    req.end(cuerpo);
+  });
+}
+if (PUENTE) {
+  cliente.on('message_create', async msg => {
+    try {
+      if (!msg.fromMe || msg.to !== msg.from) return;              // solo mi chat conmigo mismo
+      if ((msg.body || '').startsWith(MARCA_RESPUESTA)) return;     // respuesta de Claude
+      if (msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')) {
+        const m = await msg.downloadMedia();
+        console.log('[Puente] nota de voz -> Claude: ' + await alPuente('/subir', Buffer.from(m.data, 'base64'), m.mimetype.split(';')[0]));
+      } else if (msg.body && msg.type === 'chat') {
+        console.log('[Puente] mensaje -> Claude: ' + await alPuente('/texto', Buffer.from(JSON.stringify({ texto: msg.body })), 'application/json'));
+      }
+    } catch (e) {
+      console.error('[Puente] No llegó a Claude:', e.message);
+      try { await msg.reply(MARCA_RESPUESTA + ' No pude pasarlo a Claude (¿está encendido Voz a Claude?): ' + e.message); } catch (_) { }
+    }
+  });
+  console.log('[Puente] Activado: tu chat «Tú» va directo a Claude');
+}
+
 async function enviar(telefono, mensaje) {
   const digitos = String(telefono || '').replace(/\D/g, '');
   if (digitos.length !== 10) throw Object.assign(new Error('El teléfono debe tener 10 dígitos'), { status: 400 });
@@ -96,6 +136,12 @@ const servidor = http.createServer((req, res) => {
   }
   if (req.headers['x-token'] !== TOKEN) return responder(res, 401, { ok: false, error: 'Token inválido' });
   if (req.method === 'GET' && req.url === '/estado') return responder(res, 200, { listo, detalle });
+  if (req.method === 'POST' && req.url === '/apagar') {   // cierre ordenado: guarda la sesión antes de salir
+    responder(res, 200, { ok: true });
+    console.log('[WhatsApp] Apagando de forma ordenada…');
+    cliente.destroy().catch(() => { }).finally(() => process.exit(0));
+    return;
+  }
   if (req.method === 'POST' && req.url === '/enviar') {
     let cuerpo = '';
     req.on('data', c => { cuerpo += c; if (cuerpo.length > 20000) req.destroy(); });

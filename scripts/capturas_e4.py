@@ -43,9 +43,13 @@ def responder(page, correctas=True):
         page.locator(f"input[name=q{i}]").nth(idx).check()
 
 
-def identificar(page, nc):
+def identificar(page, nc, captura=None):
+    """Número de control + NIP (el de prueba: 4 últimos dígitos al revés; 99660001 usa 1234)."""
     page.click("#a1start")
     page.fill("#nc", nc)
+    page.fill("#nip", "1234" if nc == "99660001" else nc[:3:-1])
+    if captura:
+        foto(page, captura)
     page.click("#a2next")
     page.wait_for_selector("#a2confirm", state="visible")
 
@@ -85,7 +89,7 @@ with sync_playwright() as p:
         a.goto(url_qr)
         a.wait_for_selector("#a1start", state="visible")
         foto(a, "A1_inicio")
-        identificar(a, "99660001")
+        identificar(a, "99660001", captura="A2_identificacion_nip")
         foto(a, "A2_identificacion_nombre_parcial")
         a.click("#a2si")
         responder(a)

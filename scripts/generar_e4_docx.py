@@ -4,8 +4,12 @@
 
 Las cifras vienen de las mediciones del 15 de noviembre de 2026 (pruebas automáticas,
 prueba de carga, respaldo, contraste). Lo que solo puede hacer el consultor queda como [COMPLETAR].
+
+La prueba de usabilidad (sección 3, M4, M7 y TC-17) se llena sola desde ../sus_resultados.csv:
+basta con capturar las hojas en ese archivo y volver a correr este script.
 """
 import copy
+import csv
 import os
 import re
 
@@ -21,7 +25,51 @@ EVID = os.path.join(AQUI, "..", "evidencias_e4")
 PLANTILLA = os.path.join(RAIZ, "E3_Renueva_TI.docx")
 SALIDA = os.path.join(RAIZ, "E4_Renueva_TI.docx")
 
+SUS_CSV = os.path.join(RAIZ, "sus_resultados.csv")
+REPO = "https://github.com/Javiersan237/Registro_de_Creditos_Academicos"
+PAGES = "https://javiersan237.github.io/Registro_de_Creditos_Academicos/prototipo_frontend.html"
+EN_LINEA = "https://javiersan237.pythonanywhere.com/app/"
+VIDEO = "[COMPLETAR: enlace al video corto del recorrido de la sección 1.5]"
+FECHA_PRUEBAS = "[COMPLETAR: fecha de las pruebas con usuarios]"
+TC20 = None   # p. ej. "Laptop sin internet y 3 celulares: 3 de 3 guardados en la laptop; al conectarla, «Sincronizado: 3» ..."
+NIP_CELULAR = None   # p. ej. "Celular en modo avión con NIP correcto: llegó válido; con NIP equivocado (99660041): rechazado al sincronizar"
 NAVY, GRIS, CIAN = "00102E", "5A6475", "2DCAE3"
+
+
+# ---------------------------------------------------------------- resultados del SUS (si ya se capturaron)
+def _si(v):
+    return str(v or "").strip().upper() in ("SI", "SÍ", "S", "1", "X")
+
+
+def leer_sus():
+    if not os.path.exists(SUS_CSV):
+        return []
+    with open(SUS_CSV, encoding="utf-8-sig", newline="") as f:
+        filas = [x for x in csv.DictReader(f) if (x.get("s1") or "").strip()]
+    for x in filas:
+        r = [int(x[f"s{i}"]) for i in range(1, 11)]
+        x["sus"] = sum((v - 1) if i % 2 == 0 else (5 - v) for i, v in enumerate(r)) * 2.5
+    return filas
+
+
+SUS = leer_sus()
+if SUS:
+    _n = len(SUS)
+    SUS_PROM = sum(x["sus"] for x in SUS) / _n
+    T1_PROM = sum(int(x["t1_seg"]) for x in SUS) / _n
+    T1_META = sum(1 for x in SUS if _si(x["t1_ok"]) and not _si(x["t1_ayuda"]) and int(x["t1_seg"]) <= 120)
+    T2_EXPLICO = sum(_si(x["t2_explico"]) for x in SUS)
+    M4_TXT = f"{T1_PROM / 60:.1f} min en promedio ({T1_PROM:.0f} s); {T1_META} de {_n} en 2 min o menos sin ayuda (medido)"
+    M7_TXT = f"{SUS_PROM:.1f} de 100 en promedio con {_n} participantes (mínimo {min(x['sus'] for x in SUS):.1f})"
+    M4_EST = "Cumplida" if T1_PROM <= 120 else "No cumplida"
+    M7_EST = "Cumplida" if SUS_PROM >= 70 else "No cumplida"
+    TC17_TXT = (f"{_n} alumnos el {FECHA_PRUEBAS}: SUS promedio de {SUS_PROM:.1f}; T-1 en {T1_PROM:.0f} s en promedio, "
+                f"{T1_META} de {_n} en 2 min o menos sin ayuda; en T-2, {T2_EXPLICO} de {_n} explicaron que el registro quedó guardado")
+    TC17_EST = "Aprobado" if (T1_META >= 4 and SUS_PROM >= 70) else "Parcial"
+else:
+    M4_TXT = M7_TXT = "[COMPLETAR con la sección 3]"
+    M4_EST = M7_EST = "Pendiente"
+    TC17_TXT, TC17_EST = "Prueba de usabilidad con 5 alumnos y SUS (sección 3)", "Pendiente"
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 d = docx.Document(PLANTILLA)
@@ -157,7 +205,7 @@ def tabla(cabecera, filas, anchos=None, primera_negrita=True, colores=None):
             fondo = None
             if colores and j == colores[0]:
                 fondo = {"Aprobado": "D6F3E4", "Cumplida": "D6F3E4", "Cumplido": "D6F3E4", "Corregido": "D6F3E4",
-                         "Parcial": "FFF1C9", "Pendiente": "FDECE8", "No cumplida": "FDECE8"}.get(str(v).split(" ")[0])
+                         "Parcial": "FFF1C9", "Pendiente": "FDECE8", "No": "FDECE8"}.get(str(v).split(" ")[0])
             _celda(celdas[j], v, negrita=(j == 0 and primera_negrita), fondo=fondo)
     if anchos:
         for fila in t.rows:
@@ -168,16 +216,19 @@ def tabla(cabecera, filas, anchos=None, primera_negrita=True, colores=None):
 
 
 # ============================================================== CONTENIDO
+_aprob = 18 + (TC17_EST == "Aprobado") + bool(TC20)
+_pend = [c for c, e in (("TC-17", TC17_EST), ("TC-20", "Aprobado" if TC20 else "Parcial")) if e != "Aprobado"]
+RESUMEN_CASOS = f"{_aprob} de 20 aprobados" + ((f"; faltan {' y '.join(_pend)}, que necesitan" if len(_pend) > 1 else f"; falta {_pend[0]}, que necesita") + " usuarios y equipos reales" if _pend else "")
 h1("Cumplimiento de los requisitos del E4")
 par("Este entregable presenta la automatización de Renueva TI funcionando con datos simulados para el proceso "
     "«Validación, concentración y registro de créditos académicos por asistencia al Congreso Académico», los "
     "casos de prueba ejecutados con sus resultados, las métricas medidas y el plan de la prueba de usabilidad. "
     "Parte del prototipo navegable del E3, que se conserva sin cambios, y lo convierte en una aplicación real.")
 tabla(["Requisito del E4", "Dónde se cumple", "Estado"], [
-    ["Automatización o prototipo funcional con datos simulados", "Sección 1 (enlace, repositorio y video en 1.6)", "Cumplido · enlace y video [COMPLETAR]"],
-    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 25 pruebas automáticas y registro de defectos", "Parcial: 18 aprobados, 1 parcial (TC-20) y 1 pendiente (TC-17)"],
-    ["Prueba de usabilidad con al menos 5 usuarios reales y SUS", "Sección 3: protocolo, tareas, cuestionario y hoja de resultados", "Pendiente: la aplica el consultor"],
-    ["Métricas medidas antes y después", "Sección 4: 9 métricas", "Parcial: 7 medidas, 2 por medir con usuarios"],
+    ["Automatización o prototipo funcional con datos simulados", "Sección 1 (enlace, repositorio y video en 1.6)", "Cumplido" + ("" if "COMPLETAR" not in EN_LINEA + VIDEO else " · enlace y video [COMPLETAR]")],
+    ["Casos de prueba ejecutados con sus resultados", "Sección 2: 20 casos del E3, 29 pruebas automáticas y registro de defectos", RESUMEN_CASOS],
+    ["Prueba de usabilidad con al menos 5 usuarios reales y SUS", "Sección 3: protocolo, tareas, cuestionario y resultados", f"Cumplido: {len(SUS)} participantes, SUS de {SUS_PROM:.1f}" if SUS else "Pendiente: la aplica el consultor"],
+    ["Métricas medidas antes y después", "Sección 4: 9 métricas", "Cumplido: 9 medidas" if SUS else "Parcial: 7 medidas, 2 por medir con usuarios"],
     ["Borrador completo del libro con todas las secciones", "Sección 5: estado de las secciones 0 a 15", "Parcial: se integra para la entrega final"],
 ], anchos=[5.5, 7.0, 4.5], colores=(2,))
 nota("Todos los datos de alumnos, profesores y personal son simulados. Las cifras marcadas como «medido» salen de "
@@ -192,7 +243,7 @@ par("Renueva TI construyó una aplicación web en Python (Django) con cuatro rol
     "Servicios Escolares descarga el CSV para el SIIC y confirma la carga; y el alumno recibe el aviso.")
 tabla(["Rol", "Pantallas construidas", "Qué puede hacer"], [
     ["Alumno (celular)", "A1 Inicio · A2 Identificación · A3 Cuestionario · A4a Folio · A4b Guardado local · A5 Mi estado",
-     "Registrarse por QR, confirmar su identidad con su nombre parcial, responder el cuestionario, registrarse sin internet y consultar su estado con un código enviado a su correo."],
+     "Registrarse por QR con su número de control y su NIP de 4 dígitos (el mismo del SIIC), confirmar su identidad con su nombre parcial, responder el cuestionario, registrarse sin internet y consultar su estado con un código enviado a su correo."],
     ["Profesor designado", "P1 Panel de la conferencia",
      "Mostrar el QR firmado que cambia cada minuto, ver los registros que llegan, registrar a un alumno con apoyo y sincronizar en modo red local."],
     ["Comité Académico", "C1 Conferencias · C2 Tablero por carrera · C3 Detalle · Bitácora",
@@ -210,10 +261,10 @@ tabla(["Necesidad (E3)", "Elegida en el E3", "Implementado en el E4", "Cambio y 
     ["N3 App sin internet", "PWA", "PWA con Service Worker y manifiesto instalable", "Sin cambio."],
     ["N4 Cola local", "IndexedDB", "IndexedDB sin bibliotecas externas", "Sin la biblioteca de apoyo prevista: el envoltorio propio ocupa 80 líneas."],
     ["N5 QR", "qrcode + HMAC", "qrcode 8.0 + HMAC-SHA256", "Sin cambio."],
-    ["N7 Correo", "SMTP institucional (Gmail de pruebas en el prototipo)", "SMTP de Gmail de pruebas; sin credenciales, los correos se guardan en archivos", "Sin cambio. Envío real pendiente de la cuenta de pruebas."],
+    ["N7 Correo", "SMTP institucional (Gmail de pruebas en el prototipo)", "SMTP de Gmail de pruebas; sin credenciales, los correos se guardan en archivos", "Sin cambio. Envío real probado (TC-14)."],
     ["N8 WhatsApp", "Biblioteca no oficial de WhatsApp Web", "whatsapp-web.js 1.34.8 en un servicio Node.js 26", "Sin cambio. Django le habla por HTTP local con un token."],
-    ["N10 Versiones", "Git + GitHub", "Git listo (.gitignore); repositorio [COMPLETAR]", "Pendiente de crear el repositorio del consultor."],
-    ["N11 Pruebas", "unittest de Django", "unittest de Django (25 pruebas) + Playwright para el recorrido con capturas", "Nuevo: Playwright solo para generar evidencia; no forma parte del producto."],
+    ["N10 Versiones", "Git + GitHub", "Repositorio público en GitHub con ramas main y develop", "Sin cambio. No contiene datos reales: correos, teléfonos y claves van en un archivo .env que no se sube."],
+    ["N11 Pruebas", "unittest de Django", "unittest de Django (29 pruebas) + Playwright para el recorrido con capturas", "Nuevo: Playwright solo para generar evidencia; no forma parte del producto."],
 ], anchos=[2.8, 3.4, 4.6, 6.2])
 
 h2("1.3 Seguridad de los avisos durante las pruebas")
@@ -222,13 +273,24 @@ par("Como las pruebas se harán con datos de distintos usuarios, el sistema tien
     "«simulado» y no sale nada. Así se evita escribir por error a personas reales. Además, el padrón simulado usa el "
     "dominio reservado ejemplo.test, que no puede recibir correos.")
 
-h2("1.4 Cobertura de los requerimientos «Debe tener» (Must)")
+h2("1.4 Identificación del alumno con NIP")
+par("Para que nadie registre la asistencia de un compañero con solo saber su número de control, el alumno escribe "
+    "también su NIP de 4 dígitos, el mismo con el que entra al SIIC (lo entrega Servicios Escolares en el padrón). "
+    "El NIP se guarda cifrado y siempre se verifica en el servidor:")
+vinetas([
+    "Con un NIP equivocado no se muestra el nombre del alumno ni se guarda el registro.",
+    "Después de 5 intentos fallidos el número de control se bloquea unos minutos, para evitar que lo adivinen probando.",
+    "Sin internet, el celular guarda el registro con el NIP y el servidor lo verifica al sincronizar: si era incorrecto, el registro se rechaza. El NIP se borra del celular en cuanto se envía.",
+    "En el modo red local, la laptop del profesor verifica el NIP y sube el registro firmado, sin volver a enviar el NIP.",
+])
+
+h2("1.5 Cobertura de los requerimientos «Debe tener» (Must)")
 par("Los 23 requerimientos Must del E2 están construidos. La columna «Evidencia» indica cómo se comprobó.")
 must = [
     ["FR-01", "Crear conferencia y cuestionario", "C1", "TC-01 automática"],
     ["FR-02", "QR firmado por minuto", "P1", "TC-02 automática; 106 QR en el paquete de la conferencia de prueba"],
     ["FR-03", "Cargar padrón", "S1", "TC-03 automática"],
-    ["FR-04", "Identificar al alumno", "A2", "TC-04 automática"],
+    ["FR-04", "Identificar al alumno", "A2", "TC-04 automática (5 pruebas, incluye el NIP)"],
     ["FR-05", "Cuestionario de un solo intento", "A3", "TC-05 automática"],
     ["FR-06", "Confirmación con folio", "A4a, A4b", "Recorrido con capturas (Figura 2)"],
     ["FR-08", "Tablero por carrera", "C2", "TC-11 automática"],
@@ -240,7 +302,7 @@ must = [
     ["FR-23", "Sincronización automática", "A4b, A5", "TC-08 automática; recorrido con capturas"],
     ["FR-25", "Validación automática", "C3", "TC-09 automática (tabla de decisión)"],
     ["FR-26", "Crédito con 2 conferencias", "S1", "TC-10 automática"],
-    ["NFR-01", "Registro en 2 min o menos", "A1–A4", "Pendiente: prueba con 5 alumnos (TC-17)"],
+    ["NFR-01", "Registro en 2 min o menos", "A1–A4", ("TC-17: " + M4_TXT) if SUS else "Pendiente: prueba con 5 alumnos (TC-17)"],
     ["NFR-02", "Celular sin instalar", "A1–A5", "Medido a 360 px en Chrome y Edge"],
     ["NFR-03", "Contraste y texto de 16 px", "A1–A5", "TC-19 medido tras corregir D-01 y D-10"],
     ["NFR-05", "3 s con 200 simultáneos", "API", "TC-18 medido: p95 de 1.78 s"],
@@ -255,9 +317,9 @@ par("De los 12 requerimientos Should también quedaron construidos: FR-07 regist
     "FR-18 bitácora, FR-24 sincronización del modo red local, FR-27 aviso de falla, FR-28 nombre parcial y NFR-04 "
     "mensajes claros. NFR-06 (disponibilidad) y NFR-10 (cuatro navegadores) se miden al publicarlo.")
 
-h2("1.5 Recorrido de la solución")
+h2("1.6 Recorrido de la solución")
 figura("P1_panel_profesor.png", 15.5, "Figura 1. Panel del profesor (P1): QR firmado que cambia cada minuto y registro asistido.")
-figura("fig_flujo_en_linea.png", 16.5, "Figura 2. Registro del alumno con internet: identificación con nombre parcial, folio y un registro no válido por responder demasiado rápido.")
+figura("fig_flujo_en_linea.png", 16.5, "Figura 2. Registro del alumno con internet: número de control y NIP, confirmación con nombre parcial, folio y un registro no válido por responder demasiado rápido.")
 figura("fig_flujo_sin_internet.png", 16.5, "Figura 3. Registro sin internet: se guarda en el celular y se envía solo al regresar la conexión.")
 figura("C2_tablero_por_carrera.png", 15.5, "Figura 4. Tablero del Comité Académico por carrera (C2).")
 figura("C3_detalle_por_carrera.png", 15.5, "Figura 5. Detalle alumno por alumno con aciertos, tiempo, origen y motivo (C3).")
@@ -269,24 +331,26 @@ figura("Con_Internet.jpeg", 5.5, "Figura 10a. Celular con internet (TC-06): foli
 figura("Sin_Internet.jpeg", 5.5, "Figura 10b. Celular sin conexión (TC-07): la app conserva el folio RT-26-00044 y lo muestra sin internet.")
 figura("pantalla_profesor.jpeg", 15.5, "Figura 10c. Panel del profesor con los dos registros hechos desde el celular.")
 
-h2("1.6 Enlace, repositorio y video")
+h2("1.7 Enlace, repositorio y video")
 tabla(["Elemento", "Dónde"], [
-    ["Código fuente", "Carpeta prototipo_funcional/ · Repositorio GitHub: [COMPLETAR enlace]"],
-    ["Prototipo en línea", "[COMPLETAR: enlace público con HTTPS, PythonAnywhere o túnel]"],
-    ["Video de demostración", "[COMPLETAR: enlace al video corto del recorrido de la sección 1.5]"],
-    ["Cómo ejecutarlo", "README.md: iniciar_servidor.bat e iniciar_whatsapp.bat; usuarios de demostración comite, profesor y servicios"],
+    ["Código fuente", REPO],
+    ["Prototipo navegable (E3)", PAGES],
+    ["Prototipo en línea", EN_LINEA + "\nVersión de demostración: el plan gratuito no permite salir a internet, así que ahí los avisos quedan como «simulado»; el envío real se probó en la computadora del consultor (TC-14)."],
+    ["Video de demostración", VIDEO],
+    ["Cómo ejecutarlo", "README.md: iniciar_servidor.bat e iniciar_whatsapp.bat; usuarios de demostración comite, profesor y servicios. Modo red local: carpeta laptop/, que funciona en una laptop prestada sin instalar nada"],
 ], anchos=[4.0, 13.0])
 
 # ---------------------------------------------------------------- 2
 h1("2. Casos de prueba ejecutados")
-par("Los casos son los del plan de pruebas del E3 (ISO/IEC/IEEE 29119). Se ejecutaron el 15 de noviembre de 2026. "
+par("Los casos son los del plan de pruebas del E3 (ISO/IEC/IEEE 29119). Se ejecutaron el 15 de noviembre de 2026; "
+    f"las pruebas con usuarios y equipos reales (TC-17 y TC-20), el {FECHA_PRUEBAS}. "
     "«Aprobado» significa que se ejecutó y dio el resultado esperado; «Parcial», que se ejecutó solo una parte del "
     "entorno previsto; «Pendiente», que necesita usuarios o equipos que aún no participan.")
 casos = [
     ["TC-01", "FR-01, RN-03", "2 créditos se guardan; 3 se rechazan; sin cuestionario se rechaza", "Aprobado"],
     ["TC-02", "FR-02, RN-11", "QR vigente aceptado; 16 min después del fin y antes del inicio rechazados; QR alterado y de otro minuto rechazados", "Aprobado"],
     ["TC-03", "FR-03", "3 filas aceptadas; filas 5 y 6 rechazadas con su motivo; columna faltante avisada", "Aprobado"],
-    ["TC-04", "FR-04, FR-28, RN-09", "Número válido muestra «M* S*»; inexistente explica qué revisar; ya registrado muestra su folio", "Aprobado"],
+    ["TC-04", "FR-04, FR-28, RN-09", "Número y NIP válidos muestran «M* S*»; inexistente explica qué revisar; ya registrado muestra su folio. NIP equivocado: no muestra el nombre ni guarda el registro, tampoco al sincronizar uno hecho sin internet; 5 intentos fallidos bloquean el número" + (". " + NIP_CELULAR if NIP_CELULAR else ""), "Aprobado"],
     ["TC-05", "FR-05, RN-09", "Incompleto no se envía; completo guarda el tiempo; segundo intento devuelve el primer registro", "Aprobado"],
     ["TC-06", "FR-06, NFR-05", "Folio en red local: p95 de 1.78 s con 200 simultáneos. En celular (Xiaomi Redmi Note 9S, Chrome, Telcel, por túnel HTTPS): 1.85 s de «Enviar» al folio RT-26-00043, medido con cronómetro el 15 nov", "Aprobado"],
     ["TC-07", "FR-22, NFR-11", "Sin internet simulado en el navegador: «Registro guardado localmente». Celular en modo avión (Xiaomi Redmi Note 9S, Chrome): el registro se capturó a las 17:12:44 sin conexión y llegó solo al servidor a las 17:13:26 al quitar el modo avión (folio RT-26-00044, válido, sin duplicados)", "Aprobado"],
@@ -299,24 +363,22 @@ casos = [
     ["TC-14", "FR-12, FR-13, FR-14, FR-27, RN-16", "Lógica aprobada: correo y WhatsApp por alumno, motivo obligatorio, sin repetir avisos, error de WhatsApp registrado y correo enviado. Envío real el 15 nov: correo por Gmail (SMTP) a la cuenta institucional de prueba y WhatsApp a un número de prueba, ambos recibidos (Figuras 8 y 9); los otros 35 alumnos del lote quedaron como «simulado» por la lista blanca", "Aprobado"],
     ["TC-15", "NFR-07", "3 roles × 3 pantallas: 0 accesos indebidos; sin sesión redirige al inicio de sesión", "Aprobado"],
     ["TC-16", "NFR-08", "200 registros, respaldo, falla simulada (0 registros), restauración: 200 de 200", "Aprobado"],
-    ["TC-17", "NFR-01, FR-06", "Prueba de usabilidad con 5 alumnos y SUS (sección 3)", "Pendiente"],
+    ["TC-17", "NFR-01, FR-06", TC17_TXT, TC17_EST],
     ["TC-18", "NFR-05", "200 registros simultáneos, 3 corridas: 200 de 200 guardados, 100 % en 3 s o menos, p95 de 1.68 a 1.78 s", "Aprobado"],
     ["TC-19", "NFR-02, NFR-03", "360 px sin desbordes en Chrome 157 y Edge 157; contraste mínimo 4.63:1 (botón azul); texto mínimo de 16 px en las pantallas del alumno", "Aprobado (tras corregir D-01 y D-10)"],
-    ["TC-20", "FR-24", "Laptop sin internet y 3 celulares en su red local: sin ejecutar, programada para el 17 nov. La sincronización está construida y usa la misma API idempotente de TC-08", "Parcial"],
+    ["TC-20", "FR-24", TC20 or "Laptop sin internet y 3 celulares en su red local: [COMPLETAR con la prueba]. Probado en la computadora del consultor: 3 registros en la laptop, «Sincronizado: 3» y los 3 válidos en el servidor central; usa la misma API idempotente de TC-08", "Aprobado" if TC20 else "Parcial"],
 ]
 tabla(["Caso", "Requisitos", "Resultado obtenido", "Estado"], casos, anchos=[1.4, 3.0, 9.6, 3.0], colores=(3,))
-par("**Resumen:** 15 aprobados, 4 parciales y 1 pendiente. Los parciales y el pendiente dependen de equipos reales "
-    "(celular en 4G y en modo avión, laptop como red local), de las cuentas de prueba de correo y WhatsApp, y de los "
-    "usuarios de la prueba de usabilidad.")
+par(f"**Resumen:** {RESUMEN_CASOS}.")
 
 h2("2.1 Pruebas automáticas")
-par("Las 25 pruebas automáticas se ejecutan con «python manage.py test registro» y repiten los casos cada vez que "
-    "cambia el código. Resultado de la última ejecución: **25 de 25 aprobadas** (64.6 s).")
+par("Las 29 pruebas automáticas se ejecutan con «python manage.py test registro» y repiten los casos cada vez que "
+    "cambia el código. Resultado de la última ejecución (18 nov): **29 de 29 aprobadas**.")
 tabla(["Grupo", "Pruebas", "Qué comprueban"], [
     ["TC01_Conferencia", "2", "Créditos 2 y 3; conferencia sin cuestionario"],
     ["TC02_QR", "3", "Un QR distinto por minuto; ventana; QR alterado o de otro minuto"],
     ["TC03_Padron", "2", "Filas válidas y rechazadas; columna faltante"],
-    ["TC04_Identificacion", "1", "Nombre parcial; número inexistente; ya registrado"],
+    ["TC04_Identificacion", "5", "Nombre parcial; número inexistente; ya registrado; NIP equivocado no muestra datos ni registra (también al sincronizar); bloqueo tras 5 intentos; la laptop sincroniza con firma"],
     ["TC05_Cuestionario", "1", "Incompleto; completo; segundo intento"],
     ["TC07_Asistido", "1", "Registro asistido exige motivo y queda marcado"],
     ["TC08_Sincronizacion", "1", "Reenvíos sin duplicados"],
@@ -342,8 +404,10 @@ tabla(["ID", "Defecto", "Detectado en", "Corrección", "Estado"], [
     ["D-08", "El panel del profesor mostraba «03:44 a.m. h».", "Revisión de capturas", "Hora en formato de 24 horas.", "Corregido"],
     ["D-09", "Una prueba de TC-09 usaba un tiempo mínimo mal calculado (defecto de la prueba, no del sistema).", "Pruebas automáticas", "Se corrigió el dato de la prueba.", "Corregido"],
     ["D-10", "La consola de Windows no podía mostrar el carácter «→» del comando de datos.", "generar_datos", "Se cambió por «->».", "Corregido"],
+    ["D-11", "El archivo que enciende el servicio de WhatsApp buscaba Node.js en una ruta equivocada.", "Arranque del servicio", "Se corrigió la ruta de Node.js.", "Corregido"],
+    ["D-12", "El comando que genera los datos de prueba fallaba al leer el nombre del profesor de ejemplo, y no permitía elegir el horario de la conferencia.", "Preparación de la jornada de pruebas", "Se corrigió y se agregaron las opciones de hora de inicio y fin.", "Corregido"],
 ], anchos=[1.2, 6.0, 2.6, 5.2, 2.0], colores=(4,))
-nota("Defectos encontrados: 10. Corregidos: 10. Abiertos de tipo Must: 0.")
+nota("Defectos encontrados: 12. Corregidos: 12. Abiertos de tipo Must: 0.")
 
 # ---------------------------------------------------------------- 3
 h1("3. Prueba de usabilidad y SUS")
@@ -353,7 +417,7 @@ h2("3.1 Protocolo")
 vinetas([
     "Participantes: 5 alumnos del Instituto o más, de al menos dos carreras. Se identifican como P1 a P5; no se guardan nombres ni números de control reales.",
     "Antes: explicar que es un trabajo escolar, pedir su permiso y aclarar que se evalúa el sistema, no a la persona.",
-    "Datos: cada participante usa un número de control simulado (99660011 a 99660015) y su propio celular.",
+    "Datos: cada participante usa un número de control simulado (99660011 a 99660015 para T-1 y 99660021 a 99660025 para T-2) con su NIP de prueba, y su propio celular.",
     "Durante: no dar instrucciones. Cronometrar desde que escanea el QR hasta que ve su folio, y anotar dudas y errores.",
     "Después: aplicar el cuestionario SUS en papel o en un formulario.",
 ])
@@ -380,9 +444,19 @@ tabla(["#", "Afirmación"], [
 ], anchos=[1.0, 16.0])
 par("**Cálculo:** SUS = 2.5 × [Σ(respuestas impares − 1) + Σ(5 − respuestas pares)]. Va de 0 a 100; la meta es 70 o más.")
 h2("3.4 Resultados")
+def _min(v):
+    return f"{int(v) / 60:.1f}" if str(v or "").strip() else ""
+
+
+if SUS:
+    par(f"Se aplicó el {FECHA_PRUEBAS} con {len(SUS)} alumnos. Los tiempos incluyen la espera mínima de 20 s por pregunta del cuestionario (RN-15).")
+    filas_sus = [[x["participante"], x.get("carrera") or "", _min(x["t1_seg"]), "No" if _si(x["t1_ayuda"]) else "Sí",
+                  _min(x.get("t2_seg")), _min(x.get("t3_seg")), f"{x['sus']:.1f}", x.get("comentarios") or ""] for x in SUS]
+    filas_sus.append(["Promedio", "", f"{T1_PROM / 60:.1f}", f"{sum(not _si(x['t1_ayuda']) for x in SUS)} de {len(SUS)}", "", "", f"{SUS_PROM:.1f}", ""])
+else:
+    filas_sus = [[f"P{i}", "[COMPLETAR]", "", "", "", "", "", ""] for i in range(1, 6)] + [["Promedio", "", "", "_ de 5", "", "", "", ""]]
 tabla(["Participante", "Carrera", "T-1 (min)", "¿Sin ayuda?", "T-2 (min)", "T-3 (min)", "SUS", "Comentarios"],
-      [[f"P{i}", "[COMPLETAR]", "", "", "", "", "", ""] for i in range(1, 6)] +
-      [["Promedio", "", "", "_ de 5", "", "", "", ""]], anchos=[2.4, 2.4, 1.5, 1.7, 1.5, 1.5, 1.3, 4.7])
+      filas_sus, anchos=[2.4, 2.4, 1.5, 1.7, 1.5, 1.5, 1.3, 4.7])
 
 # ---------------------------------------------------------------- 4
 h1("4. Métricas antes y después")
@@ -392,11 +466,11 @@ tabla(["#", "Métrica", "Antes", "Meta", "Después", "Estado"], [
     ["M1", "Traspasos físicos de papel", "3 (Confirmado)", "0", "0 (contado en el BPMN TO-BE y en el sistema: no hay hojas)", "Cumplida"],
     ["M2", "Pasos hechos por el personal", "8", "≤ 8", "6 (contado)", "Cumplida"],
     ["M3", "Requerimientos Must con caso de prueba", "—", "100 %", "100 % (23 de 23)", "Cumplida"],
-    ["M4", "Tiempo para registrar la asistencia", "Sin dato", "≤ 2 min", "[COMPLETAR con la sección 3]", "Pendiente"],
+    ["M4", "Tiempo para registrar la asistencia", "Sin dato", "≤ 2 min", M4_TXT, M4_EST],
     ["M5", "Registros sin internet que llegan al servidor", "No aplica", "100 %", "100 % en navegador (recorrido y TC-08) y 1 de 1 en celular en modo avión (TC-07, llegó en 42 s)", "Cumplida"],
     ["M6", "Tiempo de confirmación con 200 registros", "Sin dato", "p95 ≤ 3 s", "p95 de 1.78 s; 100 % en ≤ 3 s (medido, red local, 3 corridas)", "Cumplida"],
-    ["M7", "Usabilidad (SUS)", "—", "≥ 70", "[COMPLETAR con la sección 3]", "Pendiente"],
-    ["M8", "Defectos encontrados y corregidos", "—", "0 abiertos Must", "10 encontrados, 10 corregidos, 0 abiertos (medido)", "Cumplida"],
+    ["M7", "Usabilidad (SUS)", "—", "≥ 70", M7_TXT, M7_EST],
+    ["M8", "Defectos encontrados y corregidos", "—", "0 abiertos Must", "12 encontrados, 12 corregidos, 0 abiertos (medido)", "Cumplida"],
     ["M9", "Trabajo de captura por cada 100 registros", "33 a 50 h de tecleo (Reportado, B1)", "Carga de un archivo", "0 h de tecleo: el CSV de 200 filas se generó y validó en 0.14 s (medido). Falta medir la carga del encargado en el SIIC", "Parcial"],
 ], anchos=[1.0, 3.6, 2.6, 2.2, 5.6, 2.0], colores=(5,))
 nota("La prueba de carga se hizo en la red local de la laptop del consultor con 200 alumnos simulados enviando al "
@@ -404,7 +478,7 @@ nota("La prueba de carga se hizo en la red local de la laptop del consultor con 
 
 # ---------------------------------------------------------------- 5
 h1("5. Estado del borrador del libro")
-par("El libro final (18 de noviembre, 5:00 p.m.) reúne los entregables corregidos. Esta tabla muestra de dónde sale "
+par("El libro final (20 de noviembre, 23:59) reúne los entregables corregidos. Esta tabla muestra de dónde sale "
     "cada sección y qué falta.")
 tabla(["#", "Sección del libro", "Fuente", "Estado"], [
     ["0", "Portada propia", "E1", "Lista"],
@@ -416,7 +490,7 @@ tabla(["#", "Sección del libro", "Fuente", "Estado"], [
     ["7–8", "Usuarios y requerimientos", "E2", "Lista"],
     ["9", "Solución propuesta", "E3 §2–5 y E4 §1", "Lista"],
     ["10", "Plan de calidad", "E3 §6", "Lista"],
-    ["11", "Pruebas y resultados", "E4 §2–4", "Parcial: SUS y pruebas en celular"],
+    ["11", "Pruebas y resultados", "E4 §2–4", "Lista" if SUS and TC20 else "Parcial: SUS y red local con celulares"],
     ["12", "Conclusiones y recomendaciones", "Nueva", "Por redactar"],
     ["13", "Bitácora y madurez personal", "E3 §6.7–6.8 + bitácora que se lleva aparte", "Se inserta al integrar el libro"],
     ["14", "Declaración de uso de IA", "E3 + E4", "Parcial: revisión del consultor"],
@@ -428,10 +502,10 @@ tabla(["#", "Sección del libro", "Fuente", "Estado"], [
 h1("6. Riesgos y pendientes")
 tabla(["#", "Pendiente", "Quién", "Afecta a"], [
     ["1", "Publicar en un hosting con HTTPS permanente (PythonAnywhere); las pruebas en celular se hicieron con un túnel temporal", "Consultor", "NFR-06, NFR-10"],
-    ["2", "Prueba de usabilidad con 5 alumnos y SUS", "Consultor", "TC-17, M4, M7"],
-    ["3", "Laptop como red local con 3 celulares (programada para el 17 nov)", "Consultor", "TC-20"],
+    *([] if SUS else [["2", "Prueba de usabilidad con 5 alumnos y SUS", "Consultor", "TC-17, M4, M7"]]),
+    *([] if TC20 else [["3", "Laptop como red local con 3 celulares", "Consultor", "TC-20"]]),
     ["4", "Confirmar con el Comité las reglas RN-13 a RN-15 (riesgo R8). El archivo se entrega en CSV por decisión del consultor; el formato puede cambiarse a decisión de la empresa (riesgo R7)", "Consultor y área", "FR-11, FR-25"],
-    ["5", "Repositorio en GitHub y video de demostración", "Consultor", "Entrega final"],
+    ["5", "Video de demostración", "Consultor", "Entrega final"],
 ], anchos=[0.8, 10.2, 2.8, 3.2])
 
 # ---------------------------------------------------------------- IA y referencias
