@@ -170,9 +170,30 @@
       q.opciones.map((o, j) => `<label class="opt"><input type="radio" name="q${i}" value="${j}"> ${esc(o)}</label>`).join('') +
       `</fieldset>`).join('');
     $('#a3err').style.display = 'none';
-    $('#a3send').disabled = false;
     st.t0 = Date.now();
+    iniciarEspera(p.tiempo_minimo_seg || 0);
     mostrar('A3');
+  }
+
+  // D-13: el botón muestra cuánto falta para el tiempo mínimo (RN-15) y solo se habilita al cumplirlo.
+  // Antes el alumno enviaba antes de tiempo y el registro llegaba «No válido» sin aviso.
+  function faltaEspera() {
+    return Math.max(0, Math.ceil((st.minSeg || 0) - (Date.now() - st.t0) / 1000));
+  }
+  function iniciarEspera(minSeg) {
+    clearInterval(st.relojEspera);
+    st.minSeg = minSeg;
+    const b = $('#a3send'), aviso = $('#a3espera');
+    const pintar = () => {
+      const f = faltaEspera();
+      b.disabled = f > 0;
+      b.textContent = f > 0 ? `Podrás enviar en ${Math.floor(f / 60)}:${String(f % 60).padStart(2, '0')}` : 'Enviar mi registro';
+      aviso.style.display = f > 0 ? 'block' : 'none';
+      if (!f) clearInterval(st.relojEspera);
+    };
+    aviso.textContent = `Para que tu registro sea válido, tómate al menos ${Math.round(minSeg / 60 * 10) / 10} min para leer y responder (${Math.round(minSeg / Math.max(1, st.paquete.preguntas.length))} s por pregunta).`;
+    pintar();
+    if (minSeg > 0) st.relojEspera = setInterval(pintar, 500);
   }
 
   $('#a3send').onclick = async () => {
@@ -186,6 +207,8 @@
       e.textContent = `Te falta${faltan > 1 ? 'n' : ''} ${faltan} pregunta${faltan > 1 ? 's' : ''} por responder. Contéstala${faltan > 1 ? 's' : ''} para poder enviar.`;
       return;
     }
+    if (faltaEspera() > 0) return;   // D-13: aún no se cumple el tiempo mínimo
+    clearInterval(st.relojEspera);
     $('#a3send').disabled = true;
     const datos = {
       uuid: nuevoUUID(), token, no_control: st.nc, nip: st.nip, respuestas, conferencia_id: st.confId,

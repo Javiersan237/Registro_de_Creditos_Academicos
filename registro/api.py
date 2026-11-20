@@ -59,11 +59,14 @@ def paquete(request, pk):
     cfg = Configuracion.actual()
     padron = {hashlib.sha256(a.no_control.encode()).hexdigest()[:16]: a.nombre_parcial()
               for a in Alumno.objects.filter(carrera__in=c.carreras_lista)}
+    preguntas = list(c.preguntas.all())
     return JsonResponse({
         "id": c.pk, "nombre": c.nombre, "lugar": c.lugar, "fecha": f"{c.fecha:%d/%m/%Y}",
         "horario": f"{c.hora_inicio:%H:%M} a {c.hora_fin:%H:%M} h",
         "inicio": int(c.inicio_dt().timestamp() // 60), "cierre": int(c.cierre_dt(cfg).timestamp() // 60),
-        "preguntas": [{"texto": p.texto, "opciones": p.opciones} for p in c.preguntas.all()],
+        "preguntas": [{"texto": p.texto, "opciones": p.opciones} for p in preguntas],
+        # D-13: la app muestra cuánto falta y no deja enviar antes del tiempo mínimo (RN-15)
+        "tiempo_minimo_seg": validacion.tiempo_minimo(len(preguntas), cfg),
         "padron": padron, "descargado": timezone.now().isoformat(),
     })
 
