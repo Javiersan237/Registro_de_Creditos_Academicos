@@ -50,8 +50,25 @@ cliente.on('qr', async qr => {
   qrActual = await QRCode.toDataURL(qr, { width: 320, margin: 2 });
   console.log('[WhatsApp] ' + detalle);
 });
-cliente.on('authenticated', () => { detalle = 'Autenticado, cargando chats…'; console.log('[WhatsApp] Autenticado'); });
+// D-15: al reconectar con la sesión guardada, whatsapp-web.js a veces se queda en «Autenticado» y el evento
+// «ready» nunca llega (falla conocida de la librería en 2026). Guardián: si en 90 s no queda listo, se reinicia
+// el cliente con la misma sesión (sin pedir QR), hasta 5 veces.
+let guardian = null, reintentos = 0;
+function vigilarListo() {
+  clearTimeout(guardian);
+  guardian = setTimeout(async () => {
+    if (listo || reintentos >= 5) return;
+    reintentos++;
+    detalle = `No terminó de cargar; reintento ${reintentos} de 5…`;
+    console.warn('[WhatsApp] ' + detalle);
+    try { await cliente.destroy(); } catch (e) { }
+    cliente.initialize().catch(e => { detalle = 'No se pudo reiniciar: ' + e.message; console.error(e); });
+  }, 90000);
+}
+cliente.on('loading_screen', (pct, msg) => console.log(`[WhatsApp] Cargando ${pct}% ${msg || ''}`));
+cliente.on('authenticated', () => { detalle = 'Autenticado, cargando chats…'; console.log('[WhatsApp] Autenticado'); vigilarListo(); });
 cliente.on('ready', () => {
+  clearTimeout(guardian); reintentos = 0;
   listo = true; qrActual = null;
   detalle = 'Conectado como ' + (cliente.info?.wid?.user || 'número vinculado');
   console.log('[WhatsApp] ' + detalle);
