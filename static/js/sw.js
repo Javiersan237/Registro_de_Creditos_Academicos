@@ -3,7 +3,7 @@
    abra el formulario aunque en el auditorio no haya señal. */
 importScripts('/static/js/idb.js');
 
-const CACHE = 'renueva-ti-v3';   // v3: contador del tiempo mínimo (D-13)
+const CACHE = 'renueva-ti-v4';   // v4: diseño responsive sin marco de teléfono (D-14)
 const SHELL = ['/app/', '/static/css/renueva.css', '/static/js/alumno.js', '/static/js/idb.js',
   '/manifest.webmanifest', '/static/img/icon-192.png', '/static/img/icon-512.png', '/static/img/isotipo.png'];
 

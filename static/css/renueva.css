@@ -17,7 +17,10 @@ nav.roles a,nav.roles button{background:transparent;border:1px solid #3a4a68;col
 nav.roles a.on{background:var(--cyan);color:var(--navy);border-color:var(--cyan)}
 .note{background:#FFF8D6;border-bottom:1px solid #E6D88A;padding:8px 20px;font-size:13px;color:#5b4a00}
 main{padding:22px;display:flex;justify-content:center}
-.phone{width:360px;max-width:100%;min-height:640px;background:#fff;border:10px solid #111a2e;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+/* D-14: la app del alumno ya no se dibuja dentro de un marco de teléfono. En celular ocupa toda la pantalla;
+   en PC o tablet es una tarjeta centrada. (Antes el marco solo se quitaba en pantallas de menos de 420 px.) */
+.phone{width:100%;max-width:560px;min-height:620px;background:#fff;border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 8px 28px rgba(0,16,46,.08);overflow:hidden;position:relative;display:flex;flex-direction:column}
 .phone .bar{background:var(--navy);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
 .phone .bar b{font-family:'Montserrat',system-ui,sans-serif;font-size:14px}
 .pill{border-radius:14px;padding:4px 10px;font:700 12px 'Open Sans',system-ui,sans-serif;border:0;cursor:pointer}
@@ -70,6 +73,19 @@ pre{background:#0b1730;color:#D3F1F7;border-radius:10px;padding:12px;font:12px '
 .check-list li label{font-weight:400;border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:flex;gap:6px;align-items:center}
 .scroll{overflow:auto}
 footer.pie{text-align:center;color:var(--gray);font-size:12px;padding:10px 0 24px}
-@media (max-width:420px){main{padding:0}.phone{border:0;border-radius:0;min-height:100vh;width:100%}}
+/* Celulares (incluidos los de pantalla ancha y en horizontal hasta 640 px): app a pantalla completa */
+@media (max-width:640px){
+  main{padding:0}
+  header.top{padding:10px 14px}
+  .phone{max-width:none;border:0;border-radius:0;box-shadow:none;min-height:calc(100vh - 58px);min-height:calc(100dvh - 58px)}
+  .phone .body{padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+  .desk{border:0;border-radius:0}
+  .desk .body{padding:14px}
+  .desk table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .qrbox svg{width:min(260px,80vw);height:min(260px,80vw)}
+  nav.roles{margin-left:0;width:100%}
+}
 @media (max-width:520px){header.top small{display:none}}
+/* Tablets y PC: más aire alrededor de la tarjeta */
+@media (min-width:641px){main{padding:28px 22px}}
 .phone .mut,.phone .opt,.phone label,.phone .msg,.phone legend{font-size:16px}
