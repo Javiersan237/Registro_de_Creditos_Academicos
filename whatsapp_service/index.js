@@ -10,7 +10,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const QRCode = require('qrcode');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 
 // Lee ../.env (mismo archivo que usa Django)
 const envPath = path.join(__dirname, '..', '.env');
@@ -127,6 +127,18 @@ if (PUENTE) {
       if (msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')) {
         const m = await msg.downloadMedia();
         console.log('[Puente] nota de voz -> Claude: ' + await alPuente('/subir', Buffer.from(m.data, 'base64'), m.mimetype.split(';')[0]));
+      } else if (msg.hasMedia) {                                    // video, foto o documento: se guarda en disco
+        const m = await msg.downloadMedia();
+        if (!m || !m.data) throw new Error('WhatsApp no entregó el archivo (¿muy grande?)');
+        const carpeta = process.env.WHATSAPP_PUENTE_CARPETA || path.join(require('node:os').homedir(), 'Documents', 'Claude', 'recibidos');
+        fs.mkdirSync(carpeta, { recursive: true });
+        const sello = new Date().toLocaleString('sv-SE').replace(' ', '_').replace(/:/g, '-');
+        const ext = (m.mimetype.split(';')[0].split('/')[1] || 'bin').replace('quicktime', 'mov').replace('jpeg', 'jpg');
+        const original = (m.filename || '').replace(/[\\/:*?"<>|]/g, '_');
+        const ruta = path.join(carpeta, `${sello}_${original || msg.type + '.' + ext}`);
+        fs.writeFileSync(ruta, Buffer.from(m.data, 'base64'));
+        const aviso = `[archivo ${msg.type}] Guardado en ${ruta}` + (msg.body ? ` · Mensaje: ${msg.body}` : '');
+        console.log('[Puente] archivo -> Claude: ' + await alPuente('/texto', Buffer.from(JSON.stringify({ texto: aviso })), 'application/json'));
       } else if (msg.body && msg.type === 'chat') {
         console.log('[Puente] mensaje -> Claude: ' + await alPuente('/texto', Buffer.from(JSON.stringify({ texto: msg.body })), 'application/json'));
       }
@@ -173,6 +185,29 @@ const servidor = http.createServer((req, res) => {
     responder(res, 200, { ok: true });
     console.log('[WhatsApp] Apagando de forma ordenada…');
     cliente.destroy().catch(() => { }).finally(() => process.exit(0));
+    return;
+  }
+  if (req.method === 'POST' && req.url === '/enviar_archivo') {   // { telefono, ruta, texto } → documento o imagen
+    let cuerpo = '';
+    req.on('data', c => { cuerpo += c; if (cuerpo.length > 20000) req.destroy(); });
+    req.on('end', async () => {
+      if (!listo) return responder(res, 503, { ok: false, error: 'WhatsApp no está conectado: ' + detalle });
+      try {
+        const { telefono, ruta, texto } = JSON.parse(cuerpo || '{}');
+        if (!ruta || !fs.existsSync(ruta)) throw Object.assign(new Error('No existe el archivo'), { status: 400 });
+        const digitos = String(telefono || '').replace(/\D/g, '');
+        const id = await cliente.getNumberId(LADA + digitos);
+        if (!id) throw Object.assign(new Error('Ese número no tiene WhatsApp'), { status: 404 });
+        const media = MessageMedia.fromFilePath(ruta);
+        const esImagen = /^image\//.test(media.mimetype);
+        const msg = await cliente.sendMessage(id._serialized, media, { caption: texto || undefined, sendMediaAsDocument: !esImagen });
+        console.log('[WhatsApp] Archivo enviado a ***' + digitos.slice(-4) + ': ' + path.basename(ruta));
+        responder(res, 200, { ok: true, id: msg.id?.id });
+      } catch (e) {
+        console.error('[WhatsApp] Error al enviar archivo:', e.message);
+        responder(res, e.status || 500, { ok: false, error: e.message });
+      }
+    });
     return;
   }
   if (req.method === 'POST' && req.url === '/enviar') {

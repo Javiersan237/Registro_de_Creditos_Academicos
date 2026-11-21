@@ -29,7 +29,7 @@ SUS_CSV = os.path.join(RAIZ, "sus_resultados.csv")
 REPO = "https://github.com/Javiersan237/Registro_de_Creditos_Academicos"
 PAGES = "https://javiersan237.github.io/Registro_de_Creditos_Academicos/prototipo_frontend.html"
 EN_LINEA = "https://javiersan237.pythonanywhere.com/app/"
-VIDEO = "[COMPLETAR: enlace al video corto del recorrido de la sección 1.5]"
+VIDEO = "https://drive.google.com/file/d/1BeP4lj_vdZzO4B5EUn-3m7s8E-spvAZr/view?usp=sharing"
 FECHA_PRUEBAS = "19 de noviembre de 2026"
 TC20 = None   # Parcial por decisión del consultor (19/11/2026): 5 celulares se conectaron a la laptop, pero no sincronizó con el central (la laptop tenía la dirección del túnel anterior)
 NIP_CELULAR = ("Probado en celular el 19/11/2026: registro hecho en modo avión con NIP equivocado; al volver la conexión se "
@@ -478,7 +478,7 @@ tabla(["#", "Métrica", "Antes", "Meta", "Después", "Estado"], [
     ["M5", "Registros sin internet que llegan al servidor", "No aplica", "100 %", "100 % en navegador (recorrido y TC-08) y 1 de 1 en celular en modo avión (TC-07, llegó en 42 s)", "Cumplida"],
     ["M6", "Tiempo de confirmación con 200 registros", "Sin dato", "p95 ≤ 3 s", "p95 de 1.78 s; 100 % en ≤ 3 s (medido, red local, 3 corridas)", "Cumplida"],
     ["M7", "Usabilidad (SUS)", "—", "≥ 70", M7_TXT, M7_EST],
-    ["M8", "Defectos encontrados y corregidos", "—", "0 abiertos Must", "12 encontrados, 12 corregidos, 0 abiertos (medido)", "Cumplida"],
+    ["M8", "Defectos encontrados y corregidos", "—", "0 abiertos Must", "15 encontrados, 15 corregidos, 0 abiertos (medido)", "Cumplida"],
     ["M9", "Trabajo de captura por cada 100 registros", "33 a 50 h de tecleo (Reportado, B1)", "Carga de un archivo", "0 h de tecleo: el CSV de 200 filas se generó y validó en 0.14 s (medido). Falta medir la carga del encargado en el SIIC", "Parcial"],
 ], anchos=[1.0, 3.6, 2.6, 2.2, 5.6, 2.0], colores=(5,))
 nota("La prueba de carga se hizo en la red local de la laptop del consultor con 200 alumnos simulados enviando al "
@@ -501,9 +501,9 @@ tabla(["#", "Sección del libro", "Fuente", "Estado"], [
     ["11", "Pruebas y resultados", "E4 §2–4", "Lista" if SUS and TC20 else "Parcial: SUS y red local con celulares"],
     ["12", "Conclusiones y recomendaciones", "Nueva", "Por redactar"],
     ["13", "Bitácora y madurez personal", "E3 §6.7–6.8 + bitácora que se lleva aparte", "Se inserta al integrar el libro"],
-    ["14", "Declaración de uso de IA", "E3 + E4", "Parcial: revisión del consultor"],
+    ["14", "Declaración de uso de IA", "E3 + E4", "Lista"],
     ["15", "Referencias", "E1 a E4", "Lista"],
-    ["A", "Anexos", "Entrevistas (E1), manual de identidad, evidencia de presentación al área", "[COMPLETAR: evidencia de presentación al área]"],
+    ["A", "Anexos", "Entrevistas (E1), manual de identidad, evidencia de presentación al área", "Lista: mensaje por Teams al área académica (anexo)"],
 ], anchos=[1.0, 5.0, 6.5, 4.5])
 
 # ---------------------------------------------------------------- 6
@@ -513,7 +513,6 @@ tabla(["#", "Pendiente", "Quién", "Afecta a"], [
     *([] if SUS else [["2", "Prueba de usabilidad con 5 alumnos y SUS", "Consultor", "TC-17, M4, M7"]]),
     *([] if TC20 else [["3", "Laptop como red local con 3 celulares", "Consultor", "TC-20"]]),
     ["4", "Confirmar con el Comité las reglas RN-13 a RN-15 (riesgo R8). El archivo se entrega en CSV por decisión del consultor; el formato puede cambiarse a decisión de la empresa (riesgo R7)", "Consultor y área", "FR-11, FR-25"],
-    ["5", "Video de demostración", "Consultor", "Entrega final"],
 ], anchos=[0.8, 10.2, 2.8, 3.2])
 
 # ---------------------------------------------------------------- IA y referencias
@@ -522,7 +521,11 @@ par("En este entregable se usó Claude (Anthropic) como apoyo para programar el 
     "WhatsApp), escribir y ejecutar las pruebas automáticas, de carga y de contraste, tomar las capturas y redactar "
     "este documento. Las decisiones de diseño vienen del E3 y son del consultor. Las cifras de las secciones 2 y 4 "
     "salen de ejecuciones reales del prototipo; las que no se pudieron medir están marcadas como pendientes.")
-tabla(["Revisión del consultor"], [["[COMPLETAR: qué revisaste, qué probaste tú mismo y qué corregiste]"]], anchos=[17.0])
+tabla(["Revisión del consultor"], [['Revisé y probé yo mismo el prototipo antes de entregarlo. Hice la prueba de usabilidad con cinco alumnos el 19 de noviembre y, con lo que vi, pedí corregir que se pudiera enviar el cuestionario demasiado rápido (D-13) y que la app se adaptara a pantallas grandes (D-14). Probé en mi celular el registro sin internet con un NIP equivocado y comprobé que se rechaza al sincronizar. Revisé los documentos y ajusté a mano el E3; decidí el uso del NIP, el formato CSV, los datos de ejemplo y reportar las horas medidas por Bitacore en lugar de mis estimaciones. Grabé el video del recorrido y presenté el prototipo al área académica.']], anchos=[17.0])
+
+h1("Anexo. Evidencia de presentación al área")
+par("El 20 de noviembre de 2026 se compartió el prototipo funcional, el video del recorrido, la versión en línea y el repositorio con el área académica del Instituto por Microsoft Teams.")
+figura("Evidencia_Mostrada_al_Area.png", 15.0, "Mensaje enviado por Teams al área académica (20/11/2026).")
 
 h1("Referencias")
 for ref in [

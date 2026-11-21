@@ -1,39 +1,39 @@
 ﻿folio,no_control,nombre,apellidos,carrera,semestre,grupo,correo,telefono,conferencia,fecha_conferencia,creditos_conferencia,aciertos_pct,cuestionario_valido,origen,conferencias_validas,credito
-RT-26-00002,99660002,Alumno,Demo 002,Ing. Civil,1,A,l99660002@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00007,99660007,Alumno,Demo 007,Ing. Civil,1,B,l99660007@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00012,99660012,Alumno,Demo 012,Ing. Civil,7,A,l99660012@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00017,99660017,Alumno,Demo 017,Ing. Civil,5,B,l99660017@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00022,99660022,Alumno,Demo 022,Ing. Civil,7,B,l99660022@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00027,99660027,Alumno,Demo 027,Ing. Civil,7,A,l99660027@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00032,99660032,Alumno,Demo 032,Ing. Civil,7,B,l99660032@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00042,99660042,Alumno,Demo 042,Ing. Civil,5,B,l99660042@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00010,99660010,Alumno,Demo 010,Lic. en Contaduría,7,B,l99660010@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00015,99660015,Alumno,Demo 015,Lic. en Contaduría,7,A,l99660015@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00020,99660020,Alumno,Demo 020,Lic. en Contaduría,7,A,l99660020@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00025,99660025,Alumno,Demo 025,Lic. en Contaduría,3,A,l99660025@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00030,99660030,Alumno,Demo 030,Lic. en Contaduría,7,B,l99660030@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00040,99660040,Alumno,Demo 040,Lic. en Contaduría,7,B,l99660040@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00004,99660004,Alumno,Demo 004,Ing. en Gestión Empresarial,7,A,l99660004@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00009,99660009,Alumno,Demo 009,Ing. en Gestión Empresarial,5,A,l99660009@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00014,99660014,Alumno,Demo 014,Ing. en Gestión Empresarial,5,B,l99660014@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00019,99660019,Alumno,Demo 019,Ing. en Gestión Empresarial,1,B,l99660019@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00024,99660024,Alumno,Demo 024,Ing. en Gestión Empresarial,1,A,l99660024@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00034,99660034,Alumno,Demo 034,Ing. en Gestión Empresarial,5,B,l99660034@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00039,99660039,Alumno,Demo 039,Ing. en Gestión Empresarial,7,B,l99660039@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00003,99660003,Alumno,Demo 003,Ing. Industrial,7,B,l99660003@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),2,SI
-RT-26-00045,99660003,Alumno,Demo 003,Ing. Industrial,7,B,l99660003@ejemplo.test,,Automatización de procesos con Python,2026-11-15,1,100.0,SI,Celular (QR),2,SI
-RT-26-00008,99660008,Alumno,Demo 008,Ing. Industrial,1,B,l99660008@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00018,99660018,Alumno,Demo 018,Ing. Industrial,7,B,l99660018@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00023,99660023,Alumno,Demo 023,Ing. Industrial,7,B,l99660023@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00028,99660028,Alumno,Demo 028,Ing. Industrial,7,A,l99660028@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00033,99660033,Alumno,Demo 033,Ing. Industrial,7,A,l99660033@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00038,99660038,Alumno,Demo 038,Ing. Industrial,3,B,l99660038@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00001,99660001,Usuario,Prueba Renueva,Ing. en Sistemas Computacionales,1,B,l99660001@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),2,SI
-RT-26-00044,99660001,Usuario,Prueba Renueva,Ing. en Sistemas Computacionales,1,B,l99660001@ejemplo.test,,Automatización de procesos con Python,2026-11-15,1,100.0,SI,Celular (QR),2,SI
-RT-26-00006,99660006,Alumno,Demo 006,Ing. en Sistemas Computacionales,1,B,l99660006@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00011,99660011,Alumno,Demo 011,Ing. en Sistemas Computacionales,5,B,l99660011@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00016,99660016,Alumno,Demo 016,Ing. en Sistemas Computacionales,5,A,l99660016@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00021,99660021,Alumno,Demo 021,Ing. en Sistemas Computacionales,7,B,l99660021@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
-RT-26-00026,99660026,Alumno,Demo 026,Ing. en Sistemas Computacionales,1,B,l99660026@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00031,99660031,Alumno,Demo 031,Ing. en Sistemas Computacionales,7,B,l99660031@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,100.0,SI,Celular (QR),1,NO
-RT-26-00041,99660041,Alumno,Demo 041,Ing. en Sistemas Computacionales,1,B,l99660041@ejemplo.test,,Innovación en energías limpias,2026-11-14,1,80.0,SI,Celular (QR),1,NO
+RT-26-00002,99660002,Alumno,Demo 002,Ing. Civil,1,A,l99660002@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00007,99660007,Alumno,Demo 007,Ing. Civil,1,B,l99660007@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00012,99660012,Alumno,Demo 012,Ing. Civil,7,A,l99660012@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00017,99660017,Alumno,Demo 017,Ing. Civil,5,B,l99660017@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00022,99660022,Alumno,Demo 022,Ing. Civil,7,B,l99660022@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00027,99660027,Alumno,Demo 027,Ing. Civil,7,A,l99660027@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00032,99660032,Alumno,Demo 032,Ing. Civil,7,B,l99660032@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00042,99660042,Alumno,Demo 042,Ing. Civil,5,B,l99660042@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00010,99660010,Alumno,Demo 010,Lic. en Contaduría,7,B,l99660010@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00015,99660015,Alumno,Demo 015,Lic. en Contaduría,7,A,l99660015@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00020,99660020,Alumno,Demo 020,Lic. en Contaduría,7,A,l99660020@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00025,99660025,Alumno,Demo 025,Lic. en Contaduría,3,A,l99660025@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00030,99660030,Alumno,Demo 030,Lic. en Contaduría,7,B,l99660030@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00040,99660040,Alumno,Demo 040,Lic. en Contaduría,7,B,l99660040@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00004,99660004,Alumno,Demo 004,Ing. en Gestión Empresarial,7,A,l99660004@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00009,99660009,Alumno,Demo 009,Ing. en Gestión Empresarial,5,A,l99660009@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00014,99660014,Alumno,Demo 014,Ing. en Gestión Empresarial,5,B,l99660014@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00019,99660019,Alumno,Demo 019,Ing. en Gestión Empresarial,1,B,l99660019@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00024,99660024,Alumno,Demo 024,Ing. en Gestión Empresarial,1,A,l99660024@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00034,99660034,Alumno,Demo 034,Ing. en Gestión Empresarial,5,B,l99660034@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00039,99660039,Alumno,Demo 039,Ing. en Gestión Empresarial,7,B,l99660039@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00003,99660003,Alumno,Demo 003,Ing. Industrial,7,B,l99660003@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),2,SI
+RT-26-00045,99660003,Alumno,Demo 003,Ing. Industrial,7,B,l99660003@ejemplo.test,,Automatización de procesos con Python,2026-11-18,1,100.0,SI,Celular (QR),2,SI
+RT-26-00008,99660008,Alumno,Demo 008,Ing. Industrial,1,B,l99660008@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00018,99660018,Alumno,Demo 018,Ing. Industrial,7,B,l99660018@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00023,99660023,Alumno,Demo 023,Ing. Industrial,7,B,l99660023@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00028,99660028,Alumno,Demo 028,Ing. Industrial,7,A,l99660028@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00033,99660033,Alumno,Demo 033,Ing. Industrial,7,A,l99660033@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00038,99660038,Alumno,Demo 038,Ing. Industrial,3,B,l99660038@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00001,99660001,Usuario,Prueba Renueva,Ing. en Sistemas Computacionales,5,ISC-A,l99660001@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),2,SI
+RT-26-00044,99660001,Usuario,Prueba Renueva,Ing. en Sistemas Computacionales,5,ISC-A,l99660001@ejemplo.test,,Automatización de procesos con Python,2026-11-18,1,100.0,SI,Celular (QR),2,SI
+RT-26-00006,99660006,Alumno,Demo 006,Ing. en Sistemas Computacionales,1,B,l99660006@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00011,99660011,Alumno,Demo 011,Ing. en Sistemas Computacionales,5,B,l99660011@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00016,99660016,Alumno,Demo 016,Ing. en Sistemas Computacionales,5,A,l99660016@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00021,99660021,Alumno,Demo 021,Ing. en Sistemas Computacionales,7,B,l99660021@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO
+RT-26-00026,99660026,Alumno,Demo 026,Ing. en Sistemas Computacionales,1,B,l99660026@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00031,99660031,Alumno,Demo 031,Ing. en Sistemas Computacionales,7,B,l99660031@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,100.0,SI,Celular (QR),1,NO
+RT-26-00041,99660041,Alumno,Demo 041,Ing. en Sistemas Computacionales,1,B,l99660041@ejemplo.test,,Innovación en energías limpias,2026-11-17,1,80.0,SI,Celular (QR),1,NO

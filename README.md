@@ -8,6 +8,13 @@ CSV para el SIIC y avisos por correo y WhatsApp. **Todos los datos son simulados
 Elige un rol arriba (Alumno, Profesor, Comité, Servicios Escolares); en el celular simulado, el botón
 «● En línea» permite probar el registro sin internet. Es solo navegación: no guarda ni envía datos.
 
+**Prototipo funcional en línea (PythonAnywhere):** https://javiersan237.pythonanywhere.com/login/
+(alumno: [/app/](https://javiersan237.pythonanywhere.com/app/) · usuarios `profesor`, `comite` y `servicios`,
+contraseña `Renueva2026!`). Versión de demostración: ahí los avisos quedan como «simulados».
+
+**Video del recorrido completo** (alumno → profesor → Comité Académico → Servicios Escolares):
+[ver en Google Drive](https://drive.google.com/file/d/1BeP4lj_vdZzO4B5EUn-3m7s8E-spvAZr/view?usp=sharing).
+
 Este repositorio parte de ese prototipo navegable del E3 (`prototipo_frontend.html`) y lo convierte
 en una aplicación real con Django.
 
