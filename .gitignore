@@ -24,3 +24,11 @@ laptop/datos/*
 !laptop/datos/.gitkeep
 laptop/evidencias/*
 !laptop/evidencias/.gitkeep
+
+# Evidencias con nombres reales o de ejemplo y fotos personales: se quedan solo en la PC
+evidencias_e4/P1_panel_profesor.png
+evidencias_e4/Evidencia_*
+evidencias_e4/TC04_*
+# Generador del libro (lleva datos del consultor) y respaldos de la sesión de WhatsApp
+scripts/generar_libro_docx.py
+whatsapp_service/.wwebjs_cache_viejo*/

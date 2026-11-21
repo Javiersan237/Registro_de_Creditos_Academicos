@@ -10,7 +10,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const QRCode = require('qrcode');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 
 // Lee ../.env (mismo archivo que usa Django)
 const envPath = path.join(__dirname, '..', '.env');
