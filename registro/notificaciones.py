@@ -6,6 +6,7 @@
 """
 import logging
 import threading
+import time
 
 import requests
 from django.conf import settings
@@ -19,6 +20,12 @@ from .models import Aviso, Configuracion
 log = logging.getLogger("registro")
 
 FIRMA = "Renueva TI · Renovando Mundos, Renovándote a ti\nEste aviso es parte de un prototipo escolar con datos simulados."
+# Encabezado y pie de WhatsApp (versión del salón): quién escribe y por qué, para que no parezca spam.
+WA_ENCABEZADO = "TecNM · Instituto Tecnológico de Matehuala"
+WA_PIE = ("_Prototipo escolar del registro de créditos (desarrollado por Renueva TI). "
+          "Recibes este mensaje porque escribiste este número al registrar tu asistencia._")
+_wa_candado = threading.Lock()
+_wa_ultimo = [0.0]
 
 
 # ---------------------------------------------------------------- mensajes
@@ -29,6 +36,14 @@ def msg_registro_no_valido(registro):
             f"Tu registro en la conferencia «{registro.conferencia.nombre}» (folio {registro.folio}) no fue válido.\n"
             f"Motivo: {registro.motivo}.\n\n"
             f"El cuestionario no se repite. Si crees que es un error, comunícate con: {cfg.contacto_encargado}.")
+
+
+def msg_registro_recibido(registro):
+    return ("Registramos tu asistencia",
+            f"Hola, {registro.alumno.nombre}.\n\n"
+            f"Recibimos tu registro en la conferencia «{registro.conferencia.nombre}».\n"
+            f"Folio: {registro.folio}\nEstado: validado por el sistema.\n\n"
+            f"Te avisaremos por aquí cuando tu crédito quede cargado en el SIIC.")
 
 
 def msg_cargado(alumno, registros, con_credito):
@@ -42,7 +57,7 @@ def msg_cargado(alumno, registros, con_credito):
         return "Tu crédito ya está en el SIIC", cuerpo
     cuerpo = (f"Hola, {alumno.nombre}.\n\n"
               f"Tu asistencia a {conferencias} quedó registrada en el SIIC.\n"
-              f"Puedes consultar el estado de tus registros cuando quieras en la app de Renueva TI.")
+              f"Puedes consultar el estado de tus registros cuando quieras en la app del registro de asistencia.")
     return "Tu asistencia quedó registrada en el SIIC", cuerpo
 
 
@@ -59,16 +74,23 @@ def msg_falla(alumno, registros, motivo):
 def msg_codigo(alumno, codigo):
     return ("Tu código para consultar tu estado",
             f"Hola, {alumno.nombre}.\n\nTu código para consultar el estado de tus registros es:\n\n"
-            f"    {codigo}\n\nVence en 10 minutos. Si no lo pediste, ignora este correo.")
+            f"    {codigo}\n\nVence en 10 minutos. Si no lo pediste, ignora este mensaje.")
 
 
 # ---------------------------------------------------------------- envío
-def _permitido(canal, destino):
+def _permitido(aviso):
+    canal, destino = aviso.canal, aviso.destino
+    if canal not in settings.NOTIF_CANALES:
+        return False
     if settings.NOTIF_MODO == "real":
         return True
     if canal == Aviso.CORREO:
         return destino.lower() in settings.NOTIF_LISTA_BLANCA_CORREOS
-    return destino in settings.NOTIF_LISTA_BLANCA_TELEFONOS
+    if destino in settings.NOTIF_LISTA_BLANCA_TELEFONOS:
+        return True
+    # Versión del salón: el número que el propio alumno escribió (con su NIP verificado) sí recibe su aviso.
+    al = aviso.alumno
+    return settings.NOTIF_TELEFONO_ALUMNO and al.telefono_del_alumno and al.telefono == destino
 
 
 def _html(asunto, texto):
@@ -92,7 +114,18 @@ def _enviar_correo(aviso):
 def _enviar_whatsapp(aviso):
     if not settings.WHATSAPP_ENABLED:
         raise RuntimeError("WhatsApp desactivado (WHATSAPP_ENABLED=0)")
-    texto = f"*Renueva TI · {aviso.asunto}*\n\n{aviso.contenido}"
+    texto = f"*{WA_ENCABEZADO}*\n*{aviso.asunto}*\n\n{aviso.contenido}\n\n{WA_PIE}"
+    with _wa_candado:  # un mensaje a la vez y con pausa: el número que envía no debe parecer spam
+        espera = settings.WHATSAPP_PAUSA_SEG - (time.monotonic() - _wa_ultimo[0])
+        if espera > 0:
+            time.sleep(espera)
+        try:
+            _post_whatsapp(aviso, texto)
+        finally:
+            _wa_ultimo[0] = time.monotonic()
+
+
+def _post_whatsapp(aviso, texto):
     r = requests.post(f"{settings.WHATSAPP_SERVICE_URL}/enviar",
                       json={"telefono": aviso.destino, "mensaje": texto},
                       headers={"x-token": settings.WHATSAPP_TOKEN}, timeout=30)
@@ -105,8 +138,10 @@ def despachar(aviso_id):
     aviso = Aviso.objects.get(pk=aviso_id)
     if aviso.estado == Aviso.ENVIADO:
         return aviso
-    if not _permitido(aviso.canal, aviso.destino):
-        aviso.estado, aviso.error = Aviso.SIMULADO, "No se envió: destino fuera de la lista blanca (modo prueba)."
+    if not _permitido(aviso):
+        motivo = ("canal desactivado (NOTIF_CANALES)" if aviso.canal not in settings.NOTIF_CANALES
+                  else "destino fuera de la lista blanca (modo prueba)")
+        aviso.estado, aviso.error = Aviso.SIMULADO, f"No se envió: {motivo}."
         aviso.save(update_fields=["estado", "error"])
         return aviso
     aviso.intentos += 1
@@ -134,7 +169,7 @@ def notificar(alumno, tipo, asunto, contenido, canales=(Aviso.CORREO, Aviso.WHAT
     ids = []
     for canal in canales:
         destino = alumno.correo if canal == Aviso.CORREO else alumno.telefono
-        if not destino:
+        if not destino or canal not in settings.NOTIF_CANALES:
             continue
         ids.append(Aviso.objects.create(alumno=alumno, canal=canal, tipo=tipo, destino=destino,
                                         asunto=asunto, contenido=contenido).pk)

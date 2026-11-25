@@ -16,7 +16,9 @@ from . import firma, servicios, validacion
 from .context import GRUPO_COMITE, GRUPO_PROFESOR, GRUPO_SERVICIOS
 from .models import Alumno, Aviso, Bitacora, Configuracion, Conferencia, Lote, Pregunta, Registro
 
+# Las pruebas del E4 usan los dos canales y sin aviso de «recibido»; las del salón (al final) los cambian.
 PRUEBAS = dict(NOTIF_ASYNC=False, NOTIF_MODO="real", WHATSAPP_ENABLED=True,
+               NOTIF_CANALES=["correo", "whatsapp"], NOTIF_AVISO_RECIBIDO=False, WHATSAPP_PAUSA_SEG=0, LIMITES_ACTIVOS=False,
                EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 
 
@@ -417,3 +419,128 @@ class TC07_Asistido(Base):
                                          usuario=self.profe)
         self.assertTrue(r.valido)
         self.assertEqual(r.origen, Registro.ASISTIDO)
+
+
+SALON = dict(NOTIF_CANALES=["whatsapp"], NOTIF_AVISO_RECIBIDO=True, NOTIF_MODO="prueba",
+             NOTIF_LISTA_BLANCA_TELEFONOS=[], NOTIF_TELEFONO_ALUMNO=True)
+
+
+@override_settings(**SALON)
+class TS01_VersionSalon(Base):
+    """Versión del salón (24 nov 2026): el alumno escribe su WhatsApp y recibe el aviso solo por ahí."""
+
+    def setUp(self):
+        super().setUp()
+        Alumno.objects.update(telefono="", telefono_del_alumno=False)
+
+    def test_telefono_escrito_recibe_confirmacion_por_whatsapp(self):
+        servicios.registrar_por_qr(uuid=uuid.uuid4(), token=firma.firmar(self.conf, self.m), no_control="99660001",
+                                   nip="1234", respuestas=[0] * 5, tiempo_seg=150, telefono="+52 1 488 123 4567")
+        a = Alumno.objects.get(pk="99660001")
+        self.assertEqual((a.telefono, a.telefono_del_alumno), ("4881234567", True))
+        self.assertEqual(self.wa.call_count, 1)                      # fuera de la lista blanca, pero lo escribió él
+        self.assertEqual(self.wa.call_args.kwargs["json"]["telefono"], "4881234567")
+        self.assertIn("Instituto Tecnológico de Matehuala", self.wa.call_args.kwargs["json"]["mensaje"])
+        self.assertEqual(len(mail.outbox), 0)                        # sin correo
+
+    def test_nip_equivocado_no_guarda_telefono(self):
+        with self.assertRaises(servicios.ErrorRegistro):
+            servicios.registrar_por_qr(uuid=uuid.uuid4(), token=firma.firmar(self.conf, self.m),
+                                       no_control="99660001", nip="9999", respuestas=[0] * 5, tiempo_seg=150,
+                                       telefono="4881234567")
+        self.assertEqual(Alumno.objects.get(pk="99660001").telefono, "")
+        self.assertEqual(self.wa.call_count, 0)
+
+    def test_telefono_del_padron_sigue_en_lista_blanca(self):
+        Alumno.objects.filter(pk="99660002").update(telefono="4880000002")   # no lo escribió el alumno
+        self.registrar("99660002")
+        self.assertEqual(self.wa.call_count, 0)
+        self.assertTrue(Aviso.objects.filter(estado=Aviso.SIMULADO).exists())
+
+    def test_api_codigo_por_whatsapp(self):
+        c = Client()
+        r = c.post("/api/registros", json.dumps({
+            "uuid": str(uuid.uuid4()), "token": firma.firmar(self.conf, self.m), "no_control": "99660001",
+            "nip": "1234", "respuestas": [0] * 5, "tiempo_seg": 150, "telefono": "4881234567"}),
+            content_type="application/json")
+        self.assertEqual(r.status_code, 201)
+        r = c.post("/api/estado/codigo", json.dumps({"no_control": "99660001"}), content_type="application/json")
+        self.assertIn("WhatsApp 488 *** **67", r.json()["destino"])
+        self.assertEqual(self.wa.call_count, 2)   # confirmación + código
+
+    def test_preparar_salon(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command("preparar_salon", "--sin-datos", stdout=StringIO())
+        c = Conferencia.objects.get(nombre__startswith="Renueva TI")
+        self.assertEqual(c.preguntas.count(), 6)
+        self.assertEqual(f"{c.hora_fin:%H:%M}", "23:59")
+
+
+@override_settings(LIMITES_ACTIVOS=True, LOGIN_MAX_INTENTOS=3)
+class TS02_Limites(Base):
+    """Seguridad (versión del salón): límites de intentos por dispositivo."""
+
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_login_se_bloquea(self):
+        c = Client()
+        for _ in range(3):
+            c.post("/login/", {"username": "comite", "password": "mala"})
+        r = c.post("/login/", {"username": "comite", "password": "x12345678"})   # aun con la buena
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Demasiados intentos")
+
+    def test_codigo_limitado(self):
+        c = Client()
+        codigos = [c.post("/api/estado/codigo", json.dumps({"no_control": "00000000"}),
+                          content_type="application/json").status_code for _ in range(6)]
+        self.assertEqual(codigos[-1], 429)
+
+
+
+class TS03_Integridad(Base):
+    """Seguridad (versión del salón): sellos de registros y bitácora encadenada."""
+
+    def test_registro_sellado_y_alteracion_detectada(self):
+        from .integridad import verificar
+        r, _, _ = self.registrar("99660001", resp=[1, 1, 1, 1, 1])   # < 50 %: no válido
+        self.assertFalse(r.valido)
+        self.assertTrue(verificar()["ok"])
+        Registro.objects.filter(pk=r.pk).update(valido=True, motivo="")   # «hackeo» directo a la base
+        v = verificar()
+        self.assertFalse(v["ok"])
+        self.assertIn(r.folio, v["problemas"][0])
+
+    def test_lote_no_rompe_el_sello(self):
+        from .integridad import verificar
+        self.registrar("99660001")
+        servicios.enviar_validos(self.comite)
+        self.assertTrue(verificar()["ok"])
+
+    def test_bitacora_encadenada(self):
+        from .integridad import verificar
+        for i in range(4):
+            Bitacora.registrar(self.comite, f"Acción {i}", "obj")
+        self.assertTrue(verificar()["ok"])
+        Bitacora.objects.filter(accion="Acción 1").delete()             # borrar una entrada
+        self.assertFalse(verificar()["ok"])
+
+    def test_bitacora_editada(self):
+        from .integridad import verificar
+        Bitacora.registrar(self.comite, "Envío", "lote", "10 registros")
+        Bitacora.objects.filter(accion="Envío").update(detalle="99 registros")
+        self.assertFalse(verificar()["ok"])
+
+    def test_consulta_queda_en_bitacora(self):
+        from django.core.cache import cache
+        cache.clear()
+        c = Client()
+        c.force_login(self.comite)
+        c.get("/comite/tablero/")
+        c.get("/comite/tablero/")   # recargar no duplica
+        self.assertEqual(Bitacora.objects.filter(accion="Consulta: tablero por carrera").count(), 1)
+

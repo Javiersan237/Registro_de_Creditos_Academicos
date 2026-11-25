@@ -1,7 +1,8 @@
 /* Renueva TI · Prototipo funcional E4
    Estilos base copiados de prototipo_frontend.html (E3) para mantener la misma identidad.
-   Paleta: #00102E #2DCAE3 #5851B6 #2278C2 · Montserrat / Open Sans / Fira Code */
-:root{--navy:#00102E;--cyan:#2DCAE3;--viol:#5851B6;--blue:#2278C2;--gray:#5A6475;--line:#C7D0DC;--light:#E9F1FA;--red:#B4442F;--ok:#1E7B4F}
+   Versión del salón (24 nov): la identidad al frente es la del TecNM (azul institucional #1B396A);
+   la paleta de Renueva TI (#00102E #2DCAE3 #5851B6 #2278C2) queda en «Acerca de». */
+:root{--navy:#1B396A;--cyan:#8EC5F0;--rn-navy:#00102E;--rn-cyan:#2DCAE3;--viol:#5851B6;--blue:#2278C2;--gray:#5A6475;--line:#C7D0DC;--light:#E9F1FA;--red:#B4442F;--ok:#1E7B4F}
 *{box-sizing:border-box}
 body{margin:0;font-family:'Open Sans',system-ui,sans-serif;color:var(--navy);background:#F3F6FA;font-size:16px}
 h1,h2,h3,.t{font-family:'Montserrat','Open Sans',sans-serif}
@@ -36,7 +37,7 @@ p{margin:0;line-height:1.45} .mut{color:var(--gray);font-size:14px}
 .btn.ok{background:var(--ok)} .btn.warn{background:var(--red)}
 .btn.sm{width:auto;padding:8px 14px;font-size:14px}
 label{font-weight:600;font-size:15px;display:block;margin-bottom:6px}
-input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],input[type=file],select,textarea{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;font:16px 'Open Sans',system-ui,sans-serif;background:#fff;color:var(--navy)}
+input[type=text],input[type=tel],input[type=password],input[type=date],input[type=time],input[type=number],input[type=file],select,textarea{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;font:16px 'Open Sans',system-ui,sans-serif;background:#fff;color:var(--navy)}
 input:focus,select:focus,textarea:focus{outline:3px solid #9fdcec;border-color:var(--blue)}
 .opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:2px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:15px;cursor:pointer;font-weight:400}
 .opt:has(input:checked){border-color:var(--blue);background:var(--light)}
@@ -89,3 +90,18 @@ footer.pie{text-align:center;color:var(--gray);font-size:12px;padding:10px 0 24p
 /* Tablets y PC: más aire alrededor de la tarjeta */
 @media (min-width:641px){main{padding:28px 22px}}
 .phone .mut,.phone .opt,.phone label,.phone .msg,.phone legend{font-size:16px}
+/* Franja institucional TecNM */
+.inst{background:#fff;border-bottom:4px solid var(--navy);display:flex;align-items:center;gap:18px;padding:8px 20px}
+.inst-logos{display:flex;align-items:center;gap:14px}
+.inst-logos img{height:52px;width:auto}
+.inst-txt{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.inst-txt b{font:700 17px 'Montserrat',sans-serif;color:var(--navy)}
+.inst-txt span{font-size:13px;color:var(--gray)}
+@media (max-width:640px){.inst{padding:6px 12px;gap:10px}.inst-logos img{height:36px}.inst-txt b{font-size:14px}.inst-txt span{display:none}}
+@media (max-width:420px){.inst-logos img:first-child{height:28px}}
+/* Acerca de: Renueva TI */
+.rn{background:var(--rn-navy);color:#fff;border-radius:14px;padding:22px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.rn img{max-width:320px;width:100%;border-radius:10px}
+.rn h2{color:#fff}.rn .esl{color:var(--rn-cyan);font:600 16px 'Montserrat',sans-serif;margin-top:4px}
+.sw{display:flex;gap:8px;flex-wrap:wrap}.sw i{width:44px;height:44px;border-radius:10px;display:block;border:1px solid var(--line)}
+footer.pie a{color:var(--gray)}

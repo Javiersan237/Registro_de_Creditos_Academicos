@@ -1,0 +1,142 @@
+REGISTRO DE CRÉDITOS COMPLEMENTARIOS · CONGRESO ACADÉMICO
+Instituto Tecnológico de Matehuala · Tecnológico Nacional de México
+Desarrollado por Renueva TI · Prototipo escolar (datos simulados) · Versión del salón 1.3 · 24 nov 2026
+=====================================================================================================
+
+QUÉ ES
+------
+Una app para la laptop del profesor. La laptop funciona como servidor del salón:
+  - los alumnos se registran desde su celular escaneando un QR que cambia cada minuto;
+  - contestan un cuestionario corto sobre la conferencia;
+  - reciben por WhatsApp la confirmación con su folio.
+Todo se enciende con botones: no hay que usar consolas ni archivos .bat.
+
+
+REQUISITOS
+----------
+  - Laptop con Windows 10 u 11 de 64 bits.
+  - Google Chrome o Microsoft Edge instalado (Edge ya viene con Windows).
+  - Una red Wi-Fi a la que se conecten la laptop y los celulares. Si la red de la escuela no deja que los
+    celulares vean a la laptop, usa el hotspot (punto de acceso) de un celular.
+  - Un celular con WhatsApp: desde ese número se mandan los avisos a los alumnos.
+
+
+1. INSTALAR
+-----------
+  1. Descomprime el zip y abre «Instalar_RegistroCreditos_TecNM.exe».
+  2. Si Windows muestra «Windows protegió su PC», haz clic en «Más información» y luego en
+     «Ejecutar de todas formas». Sale porque el programa es escolar y no tiene una firma comercial.
+  3. Acepta los permisos de administrador. Los necesita para darle permiso a la app en el firewall:
+     así los celulares pueden entrar (sin importar qué puerto use).
+  4. Siguiente → marca «Crear un acceso directo en el escritorio» → Instalar → Finalizar.
+
+
+2. PRIMERA VEZ: CREAR EL ADMINISTRADOR
+--------------------------------------
+  1. Abre «Registro de créditos TecNM».
+  2. Crea la CONTRASEÑA DE ADMINISTRADOR (mínimo 8 caracteres, con letras y números).
+     - Protege la sesión de WhatsApp, las claves del sistema y la base de datos (todo va cifrado).
+     - Se pide cada vez que abras la app.
+     - NO SE PUEDE RECUPERAR. Si la olvidas: «Olvidé la contraseña» borra todo y empiezas de cero.
+
+
+3. USARLA EN EL SALÓN (cada vez)
+--------------------------------
+  1. Escribe tu contraseña de administrador → «Entrar».
+  2. Presiona «▶ Encender todo».
+     - La primera vez prepara la conferencia de demostración (tarda unos segundos).
+     - En la tarjeta «2 · WhatsApp» aparece un QR. En el celular que va a enviar los avisos:
+       WhatsApp → ⋮ (menú) → Dispositivos vinculados → Vincular un dispositivo → escanea el QR.
+     - Las siguientes veces ya no pide el QR: la sesión se guarda cifrada en la laptop.
+  3. Espera a que «Servidor» y «WhatsApp» se pongan en verde.
+  4. Presiona «Abrir panel del profesor».
+     - Entra con el usuario: profesor
+     - La contraseña la ves con el botón «Mostrar / ocultar contraseña» (te pide la de administrador).
+     - Abre la conferencia «Renueva TI: así automatizamos tus créditos del Congreso».
+     - Proyecta el QR en la pantalla del salón.
+  5. Los alumnos (conectados al MISMO Wi-Fi que la laptop):
+     1. Escanean el QR de la conferencia con la cámara del celular.
+     2. Escriben su número de control y su NIP (ver «Cuentas de prueba»).
+     3. Escriben SU número de WhatsApp a 10 dígitos.
+     4. Contestan las 6 preguntas. Para enviar hay que esperar mínimo 2 minutos (regla antitrampa).
+     5. Les llega por WhatsApp «Registramos tu asistencia» con su folio.
+  6. Al terminar: «■ Apagar todo» y cierra la ventana. La sesión de WhatsApp se cifra al apagar.
+
+  La conferencia del salón está abierta hasta las 23:59 del día. Otro día, presiona
+  «Preparar conferencia de hoy».
+
+
+4. CUENTAS DE PRUEBA
+--------------------
+  50 cuentas: de 99660002 a 99660051 (ver «Cuentas_de_prueba_salon.txt»).
+  El NIP son los 4 últimos dígitos del número de control, al revés:
+      99660002 → 2000      99660013 → 3100      99660051 → 1500
+  Una cuenta por compañero. Cada cuenta solo se puede registrar una vez por conferencia.
+
+
+5. OTROS BOTONES
+----------------
+  Cambiar número (tarjeta WhatsApp)
+      Pide la contraseña de administrador y cierra la sesión del número actual: el dispositivo desaparece
+      de ese celular. Después muestra un QR nuevo para vincular otro número.
+  Verificar integridad
+      Revisa que nadie haya alterado los registros ni la bitácora por fuera de la app.
+      También está en la página web: Bitácora → «Verificar integridad».
+  Contraseña del personal
+      Cambia la contraseña de profesor, comite, servicios y admin.
+  Contraseña de administrador
+      Cambia tu contraseña de la app.
+  Ver registros
+      Abre la carpeta de bitácoras técnicas (sirve para avisar de un error).
+  Acerca de
+      Información del sistema y de Renueva TI.
+
+
+6. SEGURIDAD (QUÉ PROTEGE)
+--------------------------
+  - Base de datos COMPLETA cifrada (SQLCipher, AES-256): nombres, teléfonos, registros, respuestas y sus
+    vínculos. Sin la llave el archivo es ilegible.
+  - Sesión de WhatsApp, claves y contraseña del personal: cifradas con AES-256. Para abrirlas hacen falta
+    tu contraseña de administrador Y tu cuenta de Windows (DPAPI). Copiarlas a otra computadora no sirve.
+  - NIP de los alumnos: se guarda como huella de un solo sentido; nadie puede verlo.
+  - Cada registro lleva un sello y la bitácora va encadenada: «Verificar integridad» detecta alteraciones.
+  - La bitácora anota quién cambia y quién CONSULTA datos personales.
+  - Límite de intentos: contraseña de administrador (5 → bloqueo de 5 min), inicio de sesión del personal
+    y NIP de los alumnos.
+  - La carpeta de datos (%LOCALAPPDATA%\RegistroCreditosTecNM) solo la abre tu cuenta de Windows.
+
+  Recomendaciones:
+  - No dejes la laptop desbloqueada con la app abierta.
+  - Al terminar, apaga todo desde la app (no apagues la laptop de golpe).
+  - Si dejas de usarla, desvincula el dispositivo desde tu celular: WhatsApp → Dispositivos vinculados.
+
+
+7. PROBLEMAS FRECUENTES
+-----------------------
+  ¿Y si el puerto 8000 está ocupado?
+      No pasa nada: la app usa el siguiente libre (8001, 8002…) y la dirección y el QR se actualizan solos.
+      Lo mismo con el WhatsApp (3001, 3002…). Los puertos son de la laptop, no de la red: que otras
+      computadoras de la escuela usen el 8000 no afecta.
+  «Servidor: se detuvo»
+      Revisa «Ver registros» → servidor.log y manda el archivo a soporte.
+  Los celulares no abren la página
+      - Revisa que estén en el MISMO Wi-Fi que la laptop.
+      - Prueba con la dirección que muestra la app (http://192.168.x.x:8000/app/).
+      - Si sigue sin abrir, la red bloquea a los dispositivos entre sí (es común en redes escolares):
+        usa el hotspot de tu celular para la laptop y los celulares. Recomendado: pruébalo un día antes
+        en el mismo salón.
+  El QR de WhatsApp no aparece
+      Espera hasta un minuto. Si no aparece, «Apagar» en la tarjeta WhatsApp y vuelve a encender.
+  No llega el WhatsApp al alumno
+      - Revisa que la tarjeta WhatsApp esté en verde.
+      - Revisa que el alumno haya escrito bien su número (10 dígitos).
+      - Entre mensaje y mensaje hay una pausa de 4 s para cuidar el número que envía.
+  En el celular, «Registro guardado localmente»
+      En la red del salón (http) el modo sin internet es limitado. Se envía solo al recuperar la conexión.
+
+
+8. DESINSTALAR
+--------------
+  Configuración de Windows → Aplicaciones → «Registro de créditos TecNM» → Desinstalar.
+  Tus datos cifrados se quedan en %LOCALAPPDATA%\RegistroCreditosTecNM. Bórrala si ya no los necesitas,
+  y desvincula el dispositivo desde tu celular.

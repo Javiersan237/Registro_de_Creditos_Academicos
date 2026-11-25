@@ -3,10 +3,12 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from registro import api, views
+from registro.seguridad import LoginConLimite
 
 urlpatterns = [
     path("", views.portada, name="portada"),
     path("app/", views.app_alumno, name="app_alumno"),
+    path("acerca/", views.acerca, name="acerca"),
     path("sw.js", views.service_worker, name="sw"),
     path("manifest.webmanifest", views.manifest, name="manifest"),
 
@@ -19,7 +21,7 @@ urlpatterns = [
     path("api/estado", api.estado),
 
     # Sesión
-    path("login/", auth_views.LoginView.as_view(template_name="registro/login.html"), name="login"),
+    path("login/", LoginConLimite.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("inicio/", views.inicio, name="inicio"),
 
@@ -48,5 +50,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
-admin.site.site_header = "Renueva TI · Administración"
-admin.site.site_title = "Renueva TI"
+admin.site.site_header = "TecNM Matehuala · Administración del registro de créditos"
+admin.site.site_title = "TecNM Matehuala"

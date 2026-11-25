@@ -1,0 +1,52 @@
+{% extends "registro/base.html" %}{% load static %}
+{% block title %}Acerca de{% endblock %}
+{% block bartitle %}Acerca de este sistema{% endblock %}
+{% block content %}
+<div class="row" style="align-items:center">
+  <div style="flex:3">
+    <h2>Registro de créditos complementarios por asistencia al Congreso Académico</h2>
+    <p class="mut" style="margin-top:8px">Sistema para el <b>Instituto Tecnológico de Matehuala</b> del Tecnológico Nacional de México.
+    El alumno registra su asistencia con un QR (aunque no haya internet), el sistema valida, el Comité Académico envía y
+    Servicios Escolares recibe un archivo listo para el SIIC. Al final, el alumno recibe un aviso por WhatsApp.</p>
+  </div>
+  <div style="flex:2;display:flex;gap:14px;align-items:center;justify-content:center">
+    <img src="{% static 'img/tecnm.png' %}" alt="Tecnológico Nacional de México" style="height:70px">
+    <img src="{% static 'img/itmatehuala.png' %}" alt="Instituto Tecnológico de Matehuala" style="height:70px">
+  </div>
+</div>
+
+<h3 style="margin-top:22px">Desarrollado por</h3>
+<div class="rn">
+  <img src="{% static 'img/logo_horizontal.png' %}" alt="Renueva TI">
+  <div style="flex:1;min-width:240px">
+    <h2>Renueva TI</h2>
+    <p class="esl">Renovando Mundos, Renovándote a ti</p>
+    <p style="margin-top:10px;color:#C9D6EA">Consultoría de software y procesos · Matehuala, San Luis Potosí, México</p>
+    <p style="margin-top:6px;color:#C9D6EA">Equipo consultor de Renueva TI · Ingeniería en Sistemas Computacionales</p>
+  </div>
+</div>
+
+<div class="grid2" style="margin-top:14px">
+  <div class="card"><h3>Misión</h3><p class="mut">Automatizar y modernizar la infraestructura tecnológica de las organizaciones, resolviendo ineficiencias operativas mediante software inteligente, arquitecturas de bases de datos sólidas e integraciones de vanguardia para potenciar el rendimiento y el flujo de trabajo del cliente.</p></div>
+  <div class="card"><h3>Visión</h3><p class="mut">Consolidarnos como la consultora de software de referencia para el mercado empresarial, liderando la transición de procesos analógicos a ecosistemas digitales escalables, ágiles y de alta eficiencia tecnológica.</p></div>
+</div>
+<div class="grid2" style="margin-top:12px">
+  <div class="card"><h3>Innovación Aplicada</h3><p class="mut">Soluciones precisas orientadas a resolver problemas reales, no solo por tendencia tecnológica.</p></div>
+  <div class="card"><h3>Integridad y Ética</h3><p class="mut">Manejo transparente y seguro de las bases de datos y la información confidencial de cada cliente.</p></div>
+  <div class="card"><h3>Agilidad Operativa</h3><p class="mut">Flujos de trabajo eficientes con metodologías ágiles: entregas puntuales y de calidad.</p></div>
+  <div class="card"><h3>Diseño Centrado en el Usuario</h3><p class="mut">Software pensado en la facilidad de uso y la escalabilidad futura.</p></div>
+</div>
+
+<div class="row" style="margin-top:14px">
+  <div class="card">
+    <h3>Identidad</h3>
+    <div class="sw"><i style="background:#00102E" title="Azul Marino Profundo #00102E"></i><i style="background:#2DCAE3" title="Cian Brillante #2DCAE3"></i><i style="background:#5851B6" title="Violeta #5851B6"></i><i style="background:#2278C2" title="Azul Eléctrico #2278C2"></i></div>
+    <p class="mut" style="margin-top:8px">Montserrat · Open Sans · Fira Code</p>
+  </div>
+  <div class="card">
+    <h3>Tecnología</h3>
+    <p class="mut">Python y Django · SQLite · App web instalable que funciona sin internet (Service Worker + IndexedDB) · QR firmado con HMAC que cambia cada minuto · Avisos por WhatsApp (Node.js).</p>
+  </div>
+</div>
+<p class="mut" style="margin-top:14px">Prototipo escolar de la práctica «Automatiza tu Tec» (Fundamentos de Ingeniería de Software, SCC-1007). Todos los datos son simulados.</p>
+{% endblock %}

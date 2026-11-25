@@ -5,7 +5,8 @@
  <div class="bar"><b>Iniciar sesión</b></div>
  <div class="body">
   <p class="mut" style="margin-bottom:14px">Acceso para el Comité Académico, profesores designados y Servicios Escolares. Los alumnos no necesitan cuenta: entran directo a la <a href="/app/">app del alumno</a>.</p>
-  {% if form.errors %}<div class="msg err" style="margin-bottom:12px">El usuario o la contraseña no coinciden. Revísalos e inténtalo de nuevo.</div>{% endif %}
+  {% if bloqueado %}<div class="msg err" style="margin-bottom:12px">Demasiados intentos fallidos desde este equipo. Espera {{ bloqueado }} minutos e inténtalo de nuevo.</div>
+  {% elif form.errors %}<div class="msg err" style="margin-bottom:12px">El usuario o la contraseña no coinciden. Revísalos e inténtalo de nuevo.</div>{% endif %}
   <form method="post">{% csrf_token %}
    <div style="margin-bottom:12px"><label for="id_username">Usuario</label><input type="text" name="username" id="id_username" autocomplete="username" required autofocus></div>
    <div style="margin-bottom:16px"><label for="id_password">Contraseña</label><input type="password" name="password" id="id_password" autocomplete="current-password" required></div>

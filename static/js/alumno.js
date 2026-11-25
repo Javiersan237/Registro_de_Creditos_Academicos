@@ -4,7 +4,7 @@
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const params = new URLSearchParams(location.search);
   const token = params.get('t');
-  const st = { simOffline: false, paquete: null, confId: null, minuto: null, nc: '', nip: '', t0: 0 };
+  const st = { simOffline: false, paquete: null, confId: null, minuto: null, nc: '', nip: '', tel: '', t0: 0 };
 
   if (token) {
     const p = token.split('.');
@@ -126,7 +126,12 @@
     if (!/^\d{8}$/.test(nc)) return errA2('El número de control debe tener 8 dígitos. Revísalo y vuelve a intentarlo.');
     const nip = $('#nip').value.trim();
     if (!/^\d{4}$/.test(nip)) return errA2('Escribe tu NIP de 4 dígitos: es el mismo con el que entras al SIIC.');
-    errA2(''); st.nc = nc; st.nip = nip;
+    // Versión del salón: el alumno escribe el WhatsApp al que quiere su aviso (10 dígitos, sin lada de país)
+    let tel = $('#tel').value.replace(/\D/g, '');
+    if (tel.length === 12 && tel.startsWith('52')) tel = tel.slice(2);
+    if (tel.length === 13 && tel.startsWith('521')) tel = tel.slice(3);
+    if (!/^\d{10}$/.test(tel)) return errA2('Escribe tu número de WhatsApp a 10 dígitos (sin +52). Ahí te llegará el aviso.');
+    errA2(''); st.nc = nc; st.nip = nip; st.tel = tel;
     const local = await yaRegistradoLocal(nc);
     if (local) {
       if (local.tipo === 'pendiente') return mostrar('A4b');
@@ -211,7 +216,7 @@
     clearInterval(st.relojEspera);
     $('#a3send').disabled = true;
     const datos = {
-      uuid: nuevoUUID(), token, no_control: st.nc, nip: st.nip, respuestas, conferencia_id: st.confId,
+      uuid: nuevoUUID(), token, no_control: st.nc, nip: st.nip, telefono: st.tel, respuestas, conferencia_id: st.confId,
       tiempo_seg: Math.round((Date.now() - st.t0) / 1000), capturado_en: new Date().toISOString(), origen: 'celular'
     };
     await guardarPendiente(datos, p.nombre);      // primero se guarda: nunca se pierde (NFR-08, NFR-11)
@@ -233,7 +238,7 @@
     } else if (previo || r.duplicado) {
       h = `<div class="msg info"><h2>Ya tenías un registro en esta conferencia</h2><p style="margin-top:6px">Tu folio es</p><p class="big">${esc(r.folio)}</p><p class="mut">Solo se permite un registro por conferencia. Estado: ${esc(r.estado)}.</p></div>`;
     } else if (r.valido) {
-      h = `<div class="msg ok"><h2>¡Registro recibido!</h2><p style="margin-top:6px">Tu folio es</p><p class="big">${esc(r.folio)}</p><p class="mut">${esc(r.recibido)} h · Te avisaremos por correo y WhatsApp cuando tu registro se cargue en el SIIC.</p></div>`;
+      h = `<div class="msg ok"><h2>¡Registro recibido!</h2><p style="margin-top:6px">Tu folio es</p><p class="big">${esc(r.folio)}</p><p class="mut">${esc(r.recibido)} h · Te mandamos la confirmación por WhatsApp y te avisaremos por ahí cuando tu registro se cargue en el SIIC.</p></div>`;
     } else {
       h = `<div class="msg err"><h2>Tu registro no fue válido</h2><p style="margin-top:6px">Folio <b>${esc(r.folio)}</b></p><p style="margin-top:6px">Motivo: ${esc(r.motivo)}.</p><p class="mut" style="margin-top:6px">El cuestionario no se repite. Si crees que es un error, comunícate con: ${esc(r.contacto)}.</p></div>`;
     }
@@ -269,7 +274,7 @@
       const r = await fetch('/api/estado/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no_control: nc }) });
       const j = await r.json();
       if (!j.ok) return errA5(j.error);
-      $('#a5correo').textContent = 'Enviamos el código a ' + j.correo + '. Revisa también la carpeta de spam.';
+      $('#a5correo').textContent = 'Enviamos el código a ' + (j.destino || j.correo) + '.';
       $('#a5paso1').style.display = 'none'; $('#a5paso2').style.display = '';
     } catch (e) { errA5('No hay conexión. Inténtalo cuando tengas señal.'); }
   };
@@ -289,7 +294,7 @@
 
   // ------------------------------------------------------------ eventos
   $$('[data-go]').forEach(b => b.onclick = () => mostrar(b.dataset.go));
-  $('#a1start').onclick = () => { $('#nc').value = ''; $('#nip').value = ''; st.nip = ''; resetA2(); errA2(''); mostrar('A2'); setTimeout(() => $('#nc').focus(), 50); };
+  $('#a1start').onclick = () => { $('#nc').value = ''; $('#nip').value = ''; $('#tel').value = ''; st.nip = ''; st.tel = ''; resetA2(); errA2(''); mostrar('A2'); setTimeout(() => $('#nc').focus(), 50); };
   $('#net').onclick = async () => {
     st.simOffline = !st.simOffline; pintarRed();
     if (enLinea()) { await sincronizar(true); }

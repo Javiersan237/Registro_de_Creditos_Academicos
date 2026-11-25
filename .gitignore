@@ -32,3 +32,8 @@ evidencias_e4/TC04_*
 # Generador del libro (lleva datos del consultor) y respaldos de la sesión de WhatsApp
 scripts/generar_libro_docx.py
 whatsapp_service/.wwebjs_cache_viejo*/
+
+# Versión del salón: compilados e instalador (se publican en GitHub Releases, no en el repo)
+salon/dist/
+salon/build/
+whatsapp_service/index.js.antes_*

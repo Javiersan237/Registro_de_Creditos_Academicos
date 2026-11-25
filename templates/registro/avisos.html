@@ -1,6 +1,6 @@
 {% extends "registro/base.html" %}
 {% block title %}Avisos{% endblock %}
-{% block bartitle %}Renueva TI · Avisos a los alumnos{% endblock %}
+{% block bartitle %}Avisos a los alumnos{% endblock %}
 {% block content %}
 <div class="row" style="margin-bottom:12px">
  <div class="kpi"><b>{% if correo_real %}SMTP{% else %}Archivo{% endif %}</b><span class="mut">Correo: {% if correo_real %}envío real por SMTP{% else %}se guarda en la carpeta outbox/ (sin credenciales){% endif %}</span></div>

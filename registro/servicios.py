@@ -9,7 +9,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from . import firma, notificaciones, validacion
-from .models import CARRERAS, CARRERAS_DICT, Alumno, Bitacora, Configuracion, Conferencia, Lote, Registro
+from .models import CARRERAS, CARRERAS_DICT, Alumno, Aviso, Bitacora, Configuracion, Conferencia, Lote, Registro
 
 
 class ErrorRegistro(Exception):
@@ -55,8 +55,26 @@ def verificar_nip(alumno, nip):
                         "al SIIC. Revísalo y vuelve a intentarlo.", 403)
 
 
+def limpiar_telefono(telefono):
+    """Deja solo los dígitos; acepta 10 dígitos o 12/13 con lada de país (52 / 521). Devuelve '' si no es válido."""
+    d = "".join(ch for ch in str(telefono or "") if ch.isdigit())
+    if len(d) == 13 and d.startswith("521"):
+        d = d[3:]
+    elif len(d) == 12 and d.startswith("52"):
+        d = d[2:]
+    return d if len(d) == 10 else ""
+
+
+def guardar_telefono(alumno, telefono):
+    """Versión del salón: el alumno escribe el teléfono al que quiere el aviso (ya se verificó su NIP)."""
+    tel = limpiar_telefono(telefono)
+    if tel and (tel != alumno.telefono or not alumno.telefono_del_alumno):
+        Alumno.objects.filter(pk=alumno.pk).update(telefono=tel, telefono_del_alumno=True)
+        alumno.telefono, alumno.telefono_del_alumno = tel, True
+
+
 def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, capturado_en=None,
-                     origen=Registro.CELULAR, nip=None, nip_verificado=False):
+                     origen=Registro.CELULAR, nip=None, nip_verificado=False, telefono=None):
     """CU-02. Idempotente: el mismo uuid devuelve el mismo registro (FR-23).
     El NIP se verifica aquí (también para los registros hechos sin internet, al sincronizar).
     nip_verificado=True solo lo usan los datos simulados y la laptop del profesor, que ya lo verificó.
@@ -72,6 +90,8 @@ def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, captura
     alumno = buscar_alumno(no_control)
     if not nip_verificado:
         verificar_nip(alumno, nip)
+    if telefono:
+        guardar_telefono(alumno, telefono)
 
     existente = Registro.objects.filter(alumno=alumno, conferencia=conferencia).first()
     if existente:  # RN-09: se conserva el primero y se muestra su folio
@@ -98,6 +118,9 @@ def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, captura
     if not valido:  # FR-15
         asunto, texto = notificaciones.msg_registro_no_valido(registro)
         notificaciones.notificar(alumno, "no_valido", asunto, texto)
+    elif settings.NOTIF_AVISO_RECIBIDO:  # versión del salón: confirmación inmediata por WhatsApp
+        asunto, texto = notificaciones.msg_registro_recibido(registro)
+        notificaciones.notificar(alumno, "recibido", asunto, texto, canales=(Aviso.WHATSAPP,))
     return registro, True, False
 
 

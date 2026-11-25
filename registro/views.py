@@ -40,6 +40,11 @@ def portada(request):
     return render(request, "registro/portada.html")
 
 
+def acerca(request):
+    """Acerca de: la institución al frente y Renueva TI como empresa consultora."""
+    return render(request, "registro/acerca.html")
+
+
 def app_alumno(request):
     """Interfaz del alumno (PWA). La misma página sirve en línea y sin internet."""
     return render(request, "registro/alumno.html")
@@ -55,9 +60,9 @@ def service_worker(request):
 
 def manifest(request):
     data = {
-        "name": "Renueva TI · Registro de asistencia", "short_name": "Renueva TI",
+        "name": "Registro de asistencia · TecNM Matehuala", "short_name": "Asistencia ITMH",
         "start_url": "/app/", "scope": "/", "display": "standalone",
-        "background_color": "#00102E", "theme_color": "#00102E", "lang": "es-MX",
+        "background_color": "#1B396A", "theme_color": "#1B396A", "lang": "es-MX",
         "icons": [{"src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png"},
                   {"src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png",
                    "purpose": "any maskable"}],
@@ -93,7 +98,9 @@ def _svg_qr(texto):
 
 
 def _base_url(request):
-    return request.build_absolute_uri("/").rstrip("/")
+    # Versión del salón: el lanzador fija la dirección de la laptop en la red (URL_PUBLICA), para que el QR
+    # funcione en los celulares aunque el profesor abra el panel como «localhost».
+    return settings.URL_PUBLICA.rstrip("/") or request.build_absolute_uri("/").rstrip("/")
 
 
 @rol_requerido(GRUPO_PROFESOR)
@@ -157,6 +164,7 @@ def profesor_sincronizar(request, pk):
                 "uuid": str(r.uuid), "token": r.token, "no_control": r.alumno_id, "respuestas": r.respuestas,
                 "tiempo_seg": r.tiempo_seg, "origen": Registro.RED_LOCAL,
                 "sync_firma": firma.firma_sync(r.uuid),  # la laptop ya verificó el NIP del alumno
+                "telefono": r.alumno.telefono if r.alumno.telefono_del_alumno else "",
                 "capturado_en": r.capturado_en.isoformat() if r.capturado_en else None})
             if resp.status_code in (200, 201):
                 r.sincronizado_central = True
@@ -201,9 +209,19 @@ def _filtro_conf(request):
     return Conferencia.objects.filter(pk=cid).first() if cid else None
 
 
+def consulta(request, accion, objeto):
+    """Versión del salón: también queda en la bitácora quién CONSULTÓ datos personales (no solo quién los cambió).
+    Una entrada por usuario, pantalla y objeto cada 10 minutos, para no llenar la bitácora al recargar."""
+    from django.core.cache import cache
+    clave = f"consulta:{request.user.pk}:{accion}:{objeto}"
+    if cache.add(clave, 1, 600):
+        Bitacora.registrar(request.user, f"Consulta: {accion}", objeto, request.META.get("REMOTE_ADDR", ""))
+
+
 @rol_requerido(GRUPO_COMITE)
 def tablero(request):
     """C2: estado por carrera (FR-08). La suma de los estados coincide con el total."""
+    consulta(request, "tablero por carrera", "Registros")
     conf = _filtro_conf(request)
     qs = Registro.objects.all()
     if conf:
@@ -225,6 +243,7 @@ def tablero(request):
 @rol_requerido(GRUPO_COMITE)
 def detalle_carrera(request, carrera):
     """C3: alumno por alumno, con puntaje, tiempo y motivo (FR-09)."""
+    consulta(request, "detalle por carrera", carrera)
     conf = _filtro_conf(request)
     qs = Registro.objects.filter(alumno__carrera=carrera).select_related("alumno", "conferencia", "lote")
     if conf:
@@ -276,6 +295,7 @@ def servicios_inicio(request):
 @rol_requerido(GRUPO_SERVICIOS)
 def lote_detalle(request, pk):
     lote = get_object_or_404(Lote, pk=pk)
+    consulta(request, "lote", lote)
     filas = servicios.filas_csv(lote)
     return render(request, "registro/servicios_lote.html", {
         "lote": lote, "filas": filas[:8], "n": len(filas), "columnas": servicios.COLUMNAS_CSV,
@@ -323,6 +343,7 @@ def lote_falla(request, pk):
 
 @rol_requerido(GRUPO_SERVICIOS, GRUPO_COMITE)
 def avisos(request):
+    consulta(request, "avisos a alumnos", "Teléfonos y mensajes")
     if request.method == "POST":
         n = notificaciones.reintentar_errores()
         messages.info(request, f"Se reintentaron {n} avisos con error o pendientes.")
@@ -335,4 +356,11 @@ def avisos(request):
 
 @rol_requerido(GRUPO_SERVICIOS, GRUPO_COMITE)
 def bitacora(request):
-    return render(request, "registro/bitacora.html", {"entradas": Bitacora.objects.select_related("usuario")[:200]})
+    from .integridad import verificar
+    revision = None
+    if request.method == "POST":
+        revision = verificar()
+        Bitacora.registrar(request.user, "Verificación de integridad", "Base de datos",
+                           "Sin alteraciones" if revision["ok"] else f"{len(revision['problemas'])} problema(s)")
+    return render(request, "registro/bitacora.html", {"entradas": Bitacora.objects.select_related("usuario")[:200],
+                                                      "revision": revision})

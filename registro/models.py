@@ -67,6 +67,9 @@ class Alumno(models.Model):
     semestre = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(14)])
     grupo = models.CharField(max_length=10)
     telefono = models.CharField(max_length=10, blank=True, validators=[diez_digitos])
+    telefono_del_alumno = models.BooleanField(
+        "Teléfono escrito por el alumno", default=False,
+        help_text="El alumno lo escribió al registrarse con su NIP (versión del salón)")
     correo = models.EmailField("Correo institucional")
     # NIP de 4 dígitos (el mismo del SIIC). Nunca se guarda en claro: solo su HMAC con la clave del servidor.
     nip_hash = models.CharField("NIP (hash)", max_length=64, blank=True, editable=False)
@@ -102,6 +105,10 @@ class Alumno(models.Model):
         """FR-28: «Hola, M* S*». Solo iniciales, para que el alumno confirme que es él."""
         partes = [self.nombre.split()[0] if self.nombre else "", self.apellidos.split()[0] if self.apellidos else ""]
         return " ".join(f"{p[0].upper()}*" for p in partes if p)
+
+    def telefono_enmascarado(self):
+        t = self.telefono or ""
+        return f"{t[:3]} *** **{t[-2:]}" if len(t) == 10 else ""
 
     def correo_enmascarado(self):
         usuario, _, dominio = self.correo.partition("@")
@@ -231,6 +238,8 @@ class Registro(models.Model):
     lote = models.ForeignKey(Lote, null=True, blank=True, on_delete=models.SET_NULL, related_name="registros")
     sincronizado_central = models.BooleanField(default=False, help_text="Solo en modo local (FR-24)")
     recibido = models.DateTimeField(auto_now_add=True)
+    sello = models.CharField(max_length=64, blank=True, editable=False,
+                             help_text="HMAC de los campos: delata cambios hechos fuera de la app")
 
     class Meta:
         ordering = ["-recibido"]
@@ -246,6 +255,11 @@ class Registro(models.Model):
         if not self.folio:
             self.folio = f"RT-{timezone.localdate():%y}-{self.pk:05d}"
             super().save(update_fields=["folio"])
+        # Sello de integridad, calculado con los valores tal como quedaron en la base
+        from .integridad import sello_registro
+        guardado = Registro.objects.get(pk=self.pk)
+        self.sello = sello_registro(guardado)
+        Registro.objects.filter(pk=self.pk).update(sello=self.sello)
 
     def estado_alumno(self):
         """Estado que ve el alumno (A5). Nunca menciona el mínimo de conferencias (RN-13)."""
@@ -296,6 +310,9 @@ class Bitacora(models.Model):
     objeto = models.CharField(max_length=120)
     detalle = models.TextField(blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
+    huella_anterior = models.CharField(max_length=64, blank=True, editable=False)
+    huella = models.CharField(max_length=64, blank=True, editable=False,
+                              help_text="Cadena de huellas: borrar o cambiar una entrada rompe la cadena")
 
     class Meta:
         ordering = ["-fecha"]
@@ -305,7 +322,17 @@ class Bitacora(models.Model):
     def registrar(cls, usuario, accion, objeto, detalle=""):
         if usuario is not None and not getattr(usuario, "is_authenticated", False):
             usuario = None
-        return cls.objects.create(usuario=usuario, accion=accion, objeto=str(objeto)[:120], detalle=detalle)
+        from django.db import transaction
+
+        from .integridad import huella_bitacora
+        with transaction.atomic():
+            ultima = cls.objects.order_by("-pk").values_list("huella", flat=True).first() or ""
+            b = cls.objects.create(usuario=usuario, accion=accion[:60], objeto=str(objeto)[:120], detalle=detalle,
+                                   huella_anterior=ultima)
+            b = cls.objects.get(pk=b.pk)
+            b.huella = huella_bitacora(b, ultima)
+            cls.objects.filter(pk=b.pk).update(huella=b.huella)
+        return b
 
 
 class CodigoConsulta(models.Model):

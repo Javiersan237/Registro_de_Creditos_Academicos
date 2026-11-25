@@ -1,8 +1,13 @@
 {% extends "registro/base.html" %}
 {% block title %}Bitácora{% endblock %}
-{% block bartitle %}Renueva TI · Bitácora (FR-18){% endblock %}
+{% block bartitle %}Bitácora (FR-18){% endblock %}
 {% block content %}
-<p class="mut" style="margin-bottom:10px">Quién validó, envió, exportó o marcó como cargado cada lote, y cuándo. Las entradas no se pueden editar ni borrar.</p>
+<p class="mut" style="margin-bottom:10px">Quién validó, envió, exportó o marcó como cargado cada lote, y cuándo. Cada entrada va encadenada con la anterior y cada registro de asistencia lleva un sello: si alguien los cambia fuera de la app, la verificación lo detecta.</p>
+<form method="post" style="margin-bottom:12px">{% csrf_token %}<button class="btn sm" type="submit">Verificar integridad</button></form>
+{% if revision %}
+ {% if revision.ok %}<div class="msg ok" style="margin-bottom:12px"><b>Sin alteraciones.</b> {{ revision.registros }} registros y {{ revision.bitacora }} entradas de bitácora revisados{% if revision.sin_sello %} ({{ revision.sin_sello }} registros anteriores sin sello){% endif %}.</div>
+ {% else %}<div class="msg err" style="margin-bottom:12px"><b>Se detectaron cambios hechos fuera de la app:</b><ul style="margin:6px 0 0 18px">{% for p in revision.problemas|slice:":30" %}<li>{{ p }}</li>{% endfor %}</ul></div>{% endif %}
+{% endif %}
 <div class="scroll"><table style="font-size:13px">
  <tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Objeto</th><th>Detalle</th></tr>
  {% for b in entradas %}<tr><td>{{ b.fecha|date:"d/m/Y H:i:s" }}</td><td>{{ b.usuario.username|default:"sistema" }}</td><td>{{ b.accion }}</td><td>{{ b.objeto }}</td><td>{{ b.detalle }}</td></tr>

@@ -1,6 +1,6 @@
 {% extends "registro/base.html" %}
 {% block title %}Detalle por carrera{% endblock %}
-{% block bartitle %}Renueva TI · Comité Académico{% endblock %}
+{% block bartitle %}Comité Académico{% endblock %}
 {% block content %}
 {% include "registro/_comite_tabs.html" %}
 <p><a class="btn sec sm" href="{% url 'tablero' %}{% if conf %}?conf={{ conf.pk }}{% endif %}">← Volver al tablero</a></p>

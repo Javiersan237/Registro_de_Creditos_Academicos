@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#00102E">
+<meta name="theme-color" content="#1B396A">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="{% static 'img/icon-192.png' %}">
 <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/renueva.css' %}">
-<title>Renueva TI · Registro de asistencia</title>
+<title>Registro de asistencia · TecNM Matehuala</title>
 </head>
 <body>
-<header class="top">
-  <a class="brand" href="/"><img src="{% static 'img/isotipo.png' %}" alt=""><b>Renueva <span>TI</span></b></a>
-  <small>Registro de asistencia · Congreso Académico</small>
-</header>
+<div class="inst">
+  <a href="/" class="inst-logos"><img src="{% static 'img/tecnm.png' %}" alt="Tecnológico Nacional de México"><img src="{% static 'img/itmatehuala.png' %}" alt="Instituto Tecnológico de Matehuala"></a>
+  <div class="inst-txt"><b>Instituto Tecnológico de Matehuala</b><span>Registro de asistencia · Congreso Académico</span></div>
+</div>
 <main>
  <div class="phone" id="phone">
   <div class="bar"><b>Registro de asistencia</b><button class="pill on" id="net" title="Toca para simular que no hay internet">● En línea</button></div>
@@ -38,6 +38,9 @@
     <input type="text" id="nc" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Ejemplo: 99660001">
     <label for="nip" style="margin-top:12px">NIP (4 dígitos)</label>
     <input type="password" id="nip" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="El mismo NIP con el que entras al SIIC">
+    <label for="tel" style="margin-top:12px">Tu WhatsApp (10 dígitos)</label>
+    <input type="tel" id="tel" inputmode="numeric" maxlength="14" autocomplete="tel-national" placeholder="Ejemplo: 4881234567">
+    <p class="help">Ahí te avisaremos que recibimos tu registro y cuando tu crédito esté en el SIIC.</p>
     <p class="mut" style="margin-top:8px">Tu NIP es personal: no lo compartas. Al continuar te mostraremos tu nombre parcial para confirmar que eres tú.</p>
     <p id="nc-err" class="msg err" style="display:none;margin-top:8px"></p>
    </div>
@@ -85,7 +88,7 @@
    <div id="a5list"></div>
    <div class="card" id="a5consulta">
     <h3>Consultar estado actualizado</h3>
-    <p class="mut" style="margin-bottom:8px">Te enviaremos un código de 6 dígitos a tu correo institucional.</p>
+    <p class="mut" style="margin-bottom:8px">Te enviaremos un código de 6 dígitos al WhatsApp que escribiste al registrarte.</p>
     <div id="a5paso1"><label for="a5nc">Número de control</label><input type="text" id="a5nc" inputmode="numeric" maxlength="8">
      <button class="btn sm" id="a5pedir" style="margin-top:8px">Enviarme el código</button></div>
     <div id="a5paso2" style="display:none"><p class="mut" id="a5correo"></p><label for="a5cod">Código</label><input type="text" id="a5cod" inputmode="numeric" maxlength="6">
