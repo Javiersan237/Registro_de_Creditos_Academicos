@@ -23,9 +23,12 @@ from .servicios import ErrorRegistro, buscar_alumno, registrar_por_qr, verificar
 
 def _json(request):
     try:
-        return json.loads(request.body or b"{}")
+        datos = json.loads(request.body or b"{}")
     except ValueError:
+        datos = None
+    if not isinstance(datos, dict):
         raise ErrorRegistro("La solicitud no tiene un formato válido.")
+    return datos
 
 
 def _error(e):
@@ -113,6 +116,10 @@ def registros(request):
                              "registro": _registro_json(registro)}, status=201 if nuevo else 200)
     except ErrorRegistro as e:
         return _error(e)
+    except (ValueError, TypeError):
+        # Dato mal formado (p. ej. tiempo_seg="a"): 400 para que el celular lo descarte; un 500 lo dejaría
+        # atorado en la cola bloqueando a los registros que vienen detrás.
+        return _error(ErrorRegistro("El registro llegó con datos mal formados y no se puede guardar."))
 
 
 @csrf_exempt

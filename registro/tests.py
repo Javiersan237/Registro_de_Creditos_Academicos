@@ -596,6 +596,20 @@ class TS04_Correcciones(Base):
         Aviso.objects.create(estado=Aviso.ERROR, **nuevo)
         self.assertEqual(reintentar_errores(), 2)
 
+    def test_datos_mal_formados_dan_400_y_no_500(self):
+        """Un 500 deja el registro atorado en la cola del celular; un 400 hace que lo descarte."""
+        base = {"uuid": str(uuid.uuid4()), "token": firma.firmar(self.conf, self.m), "no_control": "99660002",
+                "nip": "1234", "respuestas": [0] * 5, "tiempo_seg": 120}
+        for malo in ({"tiempo_seg": "a"}, {"respuestas": ["x"] * 5}, {"respuestas": [{}] * 5},
+                     {"capturado_en": 5}):
+            with self.subTest(malo=malo):
+                r = Client().post("/api/registros", json.dumps({**base, **malo, "uuid": str(uuid.uuid4())}),
+                                  content_type="application/json")
+                self.assertEqual(r.status_code, 400)
+        r = Client().post("/api/registros", "[]", content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(Registro.objects.count(), 0)
+
     def test_paquete_sin_datos_de_alumnos(self):
         j = self.client.get(f"/api/paquete/{self.conf.pk}").json()
         self.assertNotIn("padron", j)
