@@ -21,7 +21,12 @@ if (fs.existsSync(envPath)) {
   }
 }
 const PUERTO = parseInt(process.env.WHATSAPP_PORT || '3001', 10);
-const TOKEN = process.env.WHATSAPP_TOKEN || 'cambia-este-token';
+const TOKEN = process.env.WHATSAPP_TOKEN || '';
+// Sin token propio no arranca: con uno conocido, cualquier programa de la computadora podría mandar mensajes.
+if (!TOKEN || TOKEN.startsWith('cambia-')) {
+  console.error('[WhatsApp] Falta WHATSAPP_TOKEN en .env (o sigue con el valor de ejemplo). Pon uno propio y largo.');
+  process.exit(1);
+}
 const LADA = process.env.WHATSAPP_LADA_PAIS || '52';   // México
 
 // La sesión va en una ruta sin acentos ni espacios (Chrome falla con rutas como «N°5»).

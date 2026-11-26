@@ -26,15 +26,19 @@ def env_lista(clave):
 
 CLAVE_DE_EJEMPLO = "dev-inseguro-solo-para-pruebas-locales"
 SECRET_KEY = env("DJANGO_SECRET_KEY", CLAVE_DE_EJEMPLO)
-DEBUG = env("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = env_lista("DJANGO_ALLOWED_HOSTS") or ["*"]
+# Sin la variable, modo de producción: la depuración se enciende a propósito (DJANGO_DEBUG=1), nunca por olvido.
+DEBUG = env("DJANGO_DEBUG", "0") == "1"
+# En producción no hay comodín por defecto: sin DJANGO_ALLOWED_HOSTS, Django rechaza todas las peticiones (400).
+ALLOWED_HOSTS = env_lista("DJANGO_ALLOWED_HOSTS") or (["*"] if DEBUG else [])
 # Seguridad (versión del salón): fuera del modo de desarrollo no se arranca con claves de ejemplo.
 if not DEBUG:
     from django.core.exceptions import ImproperlyConfigured
+    # Obligatorias: la llave de Django y, con WhatsApp encendido, su token. QR_SIGNING_KEY y NIP_KEY vacías usan
+    # DJANGO_SECRET_KEY; lo que nunca se permite son las claves de ejemplo.
+    _obligatorias = {"DJANGO_SECRET_KEY"} | ({"WHATSAPP_TOKEN"} if env("WHATSAPP_ENABLED") == "1" else set())
     for _nombre in ("DJANGO_SECRET_KEY", "QR_SIGNING_KEY", "NIP_KEY", "WHATSAPP_TOKEN"):
         _valor = env(_nombre)
-        # Vacías, QR_SIGNING_KEY y NIP_KEY usan DJANGO_SECRET_KEY; lo que no se permite son las claves de ejemplo
-        if (not _valor and _nombre == "DJANGO_SECRET_KEY") or _valor.startswith("cambia-") \
+        if (not _valor and _nombre in _obligatorias) or _valor.startswith("cambia-") \
                 or _valor == CLAVE_DE_EJEMPLO:
             raise ImproperlyConfigured(f"{_nombre} no está configurada en .env. Genera claves nuevas "
                                        "(el lanzador lo hace solo) antes de usar la app fuera de desarrollo.")
@@ -164,7 +168,7 @@ DEFAULT_FROM_EMAIL = env("EMAIL_FROM", "Renueva TI <avisos@renueva.local>")
 # ---------------------------------------------------------------------------
 WHATSAPP_ENABLED = env("WHATSAPP_ENABLED", "0") == "1"
 WHATSAPP_SERVICE_URL = env("WHATSAPP_SERVICE_URL", "http://127.0.0.1:3001")
-WHATSAPP_TOKEN = env("WHATSAPP_TOKEN", "cambia-este-token")
+WHATSAPP_TOKEN = env("WHATSAPP_TOKEN")
 
 # ---------------------------------------------------------------------------
 # Seguridad en pruebas: en modo "prueba" solo se envían avisos reales a los
