@@ -1,5 +1,5 @@
 """
-Configuración del prototipo funcional de Renueva TI (E4).
+Configuración del prototipo funcional de Renueva TI.
 
 Todos los valores sensibles (contraseñas, tokens, números de prueba) se leen
 del archivo .env, que NO se sube a Git. Ver .env.example.
@@ -43,8 +43,6 @@ if not DEBUG:
             raise ImproperlyConfigured(f"{_nombre} no está configurada en .env. Genera claves nuevas "
                                        "(el lanzador lo hace solo) antes de usar la app fuera de desarrollo.")
 CSRF_TRUSTED_ORIGINS = env_lista("CSRF_TRUSTED_ORIGINS")
-# Necesario cuando se expone con un túnel HTTPS (cloudflared) o en PythonAnywhere.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -135,6 +133,9 @@ SECURE_REFERRER_POLICY = "same-origin"
 # Con HTTPS (túnel o PythonAnywhere) las cookies solo viajan cifradas
 HTTPS = env("HTTPS", "0") == "1"
 SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = HTTPS
+# Solo detrás de un proxy HTTPS (PythonAnywhere, túnel): sin proxy, cualquiera podría mandar el encabezado a mano.
+if HTTPS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Límites de intentos por IP (registro/seguridad.py)
 LIMITES_ACTIVOS = env("LIMITES_ACTIVOS", "1") == "1"
 LOGIN_MAX_INTENTOS = int(env("LOGIN_MAX_INTENTOS", "5"))
