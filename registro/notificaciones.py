@@ -7,11 +7,13 @@
 import logging
 import threading
 import time
+from datetime import timedelta
 
 import requests
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db import close_old_connections
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import escape
 
@@ -182,7 +184,10 @@ def notificar(alumno, tipo, asunto, contenido, canales=(Aviso.CORREO, Aviso.WHAT
 
 
 def reintentar_errores():
-    ids = list(Aviso.objects.filter(estado__in=[Aviso.ERROR, Aviso.PENDIENTE]).values_list("pk", flat=True))
+    """Reintenta los avisos con error y los pendientes de hace más de 10 minutos. Los pendientes recientes siguen
+    en la fila de envío (uno cada WHATSAPP_PAUSA_SEG): reenviarlos mandaría el mismo mensaje dos veces."""
+    atorados = Q(estado=Aviso.PENDIENTE, creado__lt=timezone.now() - timedelta(minutes=10))
+    ids = list(Aviso.objects.filter(Q(estado=Aviso.ERROR) | atorados).values_list("pk", flat=True))
     for i in ids:
         despachar(i)
     return len(ids)

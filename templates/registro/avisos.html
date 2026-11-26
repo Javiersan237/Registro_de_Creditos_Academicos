@@ -8,7 +8,7 @@
  <div class="kpi"><b>{{ notif_modo|title }}</b><span class="mut">Modo de envío{% if notif_modo == 'prueba' %}: solo lista blanca{% endif %}</span></div>
 </div>
 <p class="mut">Resumen: {% for r in resumen %}{{ r.canal }} {{ r.estado }}: {{ r.n }}{% if not forloop.last %} · {% endif %}{% empty %}sin avisos todavía{% endfor %}</p>
-<form method="post" style="margin:10px 0">{% csrf_token %}<button class="btn sm" type="submit">Reintentar avisos con error</button></form>
+<form method="post" style="margin:10px 0">{% csrf_token %}<button class="btn sm" type="submit">Reintentar avisos con error</button> <span class="mut">(y los pendientes de hace más de 10 min; los recientes siguen en la fila de envío)</span></form>
 <div class="scroll"><table style="font-size:13px">
  <tr><th>Fecha</th><th>Alumno</th><th>Canal</th><th>Destino</th><th>Tipo</th><th>Asunto</th><th>Estado</th></tr>
  {% for a in avisos %}

@@ -6,8 +6,8 @@ El mismo ejecutable tiene varios modos (los usa la ventana, sin consola):
   RegistroCreditos.exe                       → la ventana (este archivo)
   RegistroCreditos.exe --servidor            → Django con waitress en 0.0.0.0:PUERTO
   RegistroCreditos.exe --preparar            → migraciones + datos simulados + conferencia del salón
-  RegistroCreditos.exe --verificar           → sellos de registros y cadena de la bitácora
-  RegistroCreditos.exe --password-personal   → aplica la contraseña del personal (variable NUEVA_PASSWORD_PERSONAL)
+  RegistroCreditos.exe --verificar           → revisa el archivo cifrado de la base (PRAGMA cipher_integrity_check)
+  RegistroCreditos.exe --password-personal   → aplica las contraseñas de profesor, comite, servicios y admin (CLAVE_*)
   RegistroCreditos.exe --evento ACCION [DET] → anota una acción del administrador en la bitácora
   RegistroCreditos.exe --cifrar-base         → convierte una base sin cifrar (versión anterior) a SQLCipher
 
@@ -43,8 +43,10 @@ SESION = DATOS / "whatsapp_sesion"
 INTENTOS = DATOS / "intentos.json"
 SIN_VENTANA = 0x08000000 if os.name == "nt" else 0   # CREATE_NO_WINDOW
 AZUL, AZUL2, GRIS, VERDE, ROJO, AMARILLO = "#1B396A", "#2E5C9A", "#5A6475", "#1E7B4F", "#B4442F", "#B98900"
+USUARIOS = ("profesor", "comite", "servicios", "admin")
+CLAVES_USUARIOS = tuple(f"CLAVE_{u.upper()}" for u in USUARIOS)   # una contraseña distinta por usuario
 SECRETOS = ("DJANGO_SECRET_KEY", "QR_SIGNING_KEY", "NIP_KEY", "INTEGRIDAD_KEY", "WHATSAPP_TOKEN", "SALON_PASSWORD",
-            "DB_CLAVE")
+            "DB_CLAVE", *CLAVES_USUARIOS)
 MAX_INTENTOS, BLOQUEO_SEG = 5, 300
 
 
@@ -108,12 +110,19 @@ def quitar_secretos_del_env():
 def secretos_nuevos():
     clave = lambda: secrets.token_urlsafe(40)
     return {"DJANGO_SECRET_KEY": clave(), "QR_SIGNING_KEY": clave(), "NIP_KEY": clave(), "INTEGRIDAD_KEY": clave(),
-            "WHATSAPP_TOKEN": secrets.token_hex(16), "SALON_PASSWORD": contrasena_personal(),
-            "DB_CLAVE": secrets.token_hex(32)}   # llave de la base cifrada (SQLCipher, AES-256)
+            "WHATSAPP_TOKEN": secrets.token_hex(16), "DB_CLAVE": secrets.token_hex(32),   # DB_CLAVE: SQLCipher
+            **claves_usuarios_nuevas()}
 
 
-def contrasena_personal():
+def contrasena_personal(usuario="profesor"):
+    """Personal: «Tec-» + 11 caracteres. Admin (superusuario de /admin/): 32 caracteres, muy distinta."""
+    if usuario == "admin":
+        return secrets.token_urlsafe(24)
     return "Tec-" + secrets.token_urlsafe(8).replace("-", "x").replace("_", "y")
+
+
+def claves_usuarios_nuevas():
+    return {f"CLAVE_{u.upper()}": contrasena_personal(u) for u in USUARIOS}
 
 
 def ip_local():
@@ -223,7 +232,7 @@ def asegurar_base(con_datos=True):
     call_command("migrate", interactive=False, verbosity=0)
     if con_datos and not User.objects.exists():
         print("Base sin datos: se prepara la demostración del salón")
-        call_command("preparar_salon", "--password", os.environ.get("SALON_PASSWORD", ""))
+        call_command("preparar_salon")   # contraseñas: CLAVE_* del entorno (vienen de la bóveda)
 
 
 def modo_servidor():
@@ -244,7 +253,10 @@ def modo_preparar():
     _django()
     from django.core.management import call_command
     call_command("migrate", interactive=False, verbosity=1)
-    call_command("preparar_salon", "--password", os.environ.get("SALON_PASSWORD", ""))
+    from django.contrib.auth.models import User
+    # Con usuarios ya creados solo se reemplaza la conferencia del día: NO se regeneran los datos simulados
+    # (eso borraba los teléfonos que escribieron los alumnos y el historial de avisos).
+    call_command("preparar_salon", *(["--sin-datos"] if User.objects.exists() else []))
     print("PREPARADO_OK")
 
 
@@ -265,9 +277,8 @@ def modo_password_personal():
     _a_log("preparar")
     _django()
     from django.contrib.auth.models import User
-    nueva = os.environ["NUEVA_PASSWORD_PERSONAL"]
-    for u in User.objects.filter(username__in=["profesor", "comite", "servicios", "admin"]):
-        u.set_password(nueva)
+    for u in User.objects.filter(username__in=USUARIOS):
+        u.set_password(os.environ[f"CLAVE_{u.username.upper()}"])
         u.save()
     print("PASSWORD_OK")
 
@@ -498,6 +509,11 @@ def ventana():
             if "DB_CLAVE" not in sec:   # bóveda de una versión anterior: se agrega la llave de la base
                 sec["DB_CLAVE"] = secrets.token_hex(32)
                 bov.guardar_secretos(sec)
+            claves_viejas = any(k not in sec for k in CLAVES_USUARIOS)
+            if claves_viejas:   # versión anterior: una sola contraseña para todos → una distinta por usuario
+                sec.update({k: v for k, v in claves_usuarios_nuevas().items() if k not in sec})
+                sec.pop("SALON_PASSWORD", None)
+                bov.guardar_secretos(sec)
             if base_sin_cifrar(DATOS / "db.sqlite3"):   # base de la versión anterior → se cifra completa
                 err.config(text="Cifrando la base de datos de la versión anterior…", fg=AMARILLO)
                 raiz.update()
@@ -517,12 +533,15 @@ def ventana():
             if SESION.exists():
                 time.sleep(1)
                 bov.cifrar_carpeta(SESION)
+            if claves_viejas and (DATOS / "db.sqlite3").exists():   # aplica las contraseñas nuevas a la base
+                subprocess.run(comando_propio("--password-personal"), env=entorno_hijo(), cwd=str(DATOS),
+                               capture_output=True, creationflags=SIN_VENTANA)
             marco.destroy()
             if primera:
                 messagebox.showinfo("Administrador creado",
                                     "Listo. Guarda bien tu contraseña: sin ella no se puede abrir la sesión de WhatsApp.\n\n"
-                                    "La contraseña del personal (profesor, comite, servicios) se ve con el botón "
-                                    "«Mostrar» y pide esta misma contraseña.")
+                                    "Las contraseñas de profesor, comite, servicios y admin (una distinta para cada "
+                                    "uno) se ven con el botón «Mostrar» y piden esta misma contraseña.")
             pantalla_principal(primera)
             evento("Administrador creado" if primera else "Inicio de sesión del administrador")
 
@@ -615,8 +634,8 @@ def ventana():
         f3.pack(anchor="w", padx=14, pady=(6, 12))
 
         t4 = tarjeta(izq, "4 · Administración y seguridad")
-        a_txt = tk.Label(t4, text="La sesión de WhatsApp y las claves están cifradas (AES-256 + Windows DPAPI + tu "
-                                  "contraseña). Cada acción queda en la bitácora encadenada.", font=F, fg=GRIS,
+        a_txt = tk.Label(t4, text="La base de datos, la sesión de WhatsApp y las claves están cifradas (AES-256 + "
+                                  "Windows DPAPI + tu contraseña). Cada acción queda en la bitácora.", font=F, fg=GRIS,
                          bg="white", wraplength=520, justify="left")
         a_txt.pack(anchor="w", padx=14)
         f4 = tk.Frame(t4, bg="white")
@@ -831,43 +850,53 @@ def ventana():
         def mostrar_pwd():
             if estado["ver_pwd"]:
                 estado["ver_pwd"] = False
-            elif pedir_admin("Mostrar la contraseña del personal."):
+            elif pedir_admin("Mostrar las contraseñas del personal."):
                 estado["ver_pwd"] = True
                 raiz.after(30000, lambda: (estado.update(ver_pwd=False), actualizar_cred()))   # se oculta sola
                 actualizar_cred()
-                messagebox.showinfo("Contraseña del personal",
-                                    f"Usuarios: profesor · comite · servicios · admin\n\n"
-                                    f"Contraseña:  {sec.get('SALON_PASSWORD', '—')}\n\n"
-                                    "También queda visible 30 segundos en la tarjeta de la derecha.")
+                messagebox.showinfo("Contraseñas del personal",
+                                    "\n".join(f"{u}:  {sec.get(f'CLAVE_{u.upper()}', '—')}" for u in USUARIOS) +
+                                    "\n\nTambién quedan visibles 30 segundos en la tarjeta de la derecha.")
             actualizar_cred()
 
         def cambiar_pwd_personal():
-            if not pedir_admin("Cambiar la contraseña de profesor, comite, servicios y admin."):
+            if not pedir_admin("Cambiar la contraseña de un usuario del personal."):
+                return
+            usuario = (simpledialog.askstring("Contraseña del personal",
+                                              "¿De qué usuario? (profesor, comite, servicios o admin)", parent=raiz)
+                       or "").strip().lower()
+            if usuario not in USUARIOS:
+                if usuario:
+                    messagebox.showerror("Usuario", "Escribe profesor, comite, servicios o admin.")
                 return
             nueva = simpledialog.askstring("Contraseña del personal",
-                                           "Nueva contraseña (mínimo 8, con letras y números).\nDéjala vacía para generar una al azar:",
-                                           show="•", parent=raiz)
+                                           f"Nueva contraseña de {usuario} (mínimo 8, con letras y números).\n"
+                                           "Déjala vacía para generar una al azar:", show="•", parent=raiz)
             if nueva is None:
                 return
-            nueva = nueva or contrasena_personal()
+            nueva = nueva or contrasena_personal(usuario)
             if not Boveda.contrasena_valida(nueva):
                 messagebox.showerror("Contraseña débil", "Mínimo 8 caracteres, con letras y números.")
+                return
+            otros = {k: v for k, v in sec.items() if k in CLAVES_USUARIOS and k != f"CLAVE_{usuario.upper()}"}
+            if nueva in otros.values():
+                messagebox.showerror("Contraseña repetida", "Cada usuario debe tener una contraseña distinta.")
                 return
 
             def trabajo():
                 if not (DATOS / "db.sqlite3").exists():
                     return True
                 r = subprocess.run(comando_propio("--password-personal"),
-                                   env=entorno_hijo({"NUEVA_PASSWORD_PERSONAL": nueva}), cwd=str(DATOS),
+                                   env=entorno_hijo({f"CLAVE_{usuario.upper()}": nueva}), cwd=str(DATOS),
                                    capture_output=True, creationflags=SIN_VENTANA)
                 return r.returncode == 0
 
             def fin(ok):
                 if ok:
-                    sec["SALON_PASSWORD"] = nueva
+                    sec[f"CLAVE_{usuario.upper()}"] = nueva
                     bov.guardar_secretos(sec)
-                    evento("Cambio de contraseña del personal")
-                    messagebox.showinfo("Listo", "Contraseña del personal actualizada.")
+                    evento("Cambio de contraseña del personal", usuario)
+                    messagebox.showinfo("Listo", f"Contraseña de {usuario} actualizada.")
                     actualizar_cred()
                 else:
                     messagebox.showerror("Error", "No se pudo cambiar. Revisa «Ver registros».")
@@ -897,7 +926,7 @@ def ventana():
             messagebox.showinfo("Listo", "Contraseña de administrador cambiada.")
 
         def verificar():
-            a_txt.config(text="Verificando sellos de registros y cadena de la bitácora…", fg=AMARILLO)
+            a_txt.config(text="Verificando el archivo cifrado de la base (cada página)…", fg=AMARILLO)
 
             def trabajo():
                 (DATOS / "integridad.json").unlink(missing_ok=True)
@@ -912,8 +941,8 @@ def ventana():
                 if r is None:
                     a_txt.config(text="No se pudo verificar (¿ya preparaste la conferencia?).", fg=ROJO)
                 elif r["ok"]:
-                    a_txt.config(text=f"✔ Sin alteraciones: {r['registros']} registros y {r['bitacora']} entradas de "
-                                      f"bitácora revisados ({time.strftime('%H:%M')}).", fg=VERDE)
+                    a_txt.config(text=f"✔ Sin alteraciones en el archivo cifrado: {r['registros']} registros y "
+                                      f"{r['bitacora']} entradas de bitácora ({time.strftime('%H:%M')}).", fg=VERDE)
                 else:
                     a_txt.config(text="⚠ Se detectaron cambios hechos fuera de la app:\n• " +
                                       "\n• ".join(r["problemas"][:6]), fg=ROJO)
@@ -960,8 +989,9 @@ def ventana():
         boton(pie, "Acerca de", acerca, False).pack(side="right", padx=8)
 
         def actualizar_cred():
-            pwd = sec.get("SALON_PASSWORD", "—") if estado["ver_pwd"] else "••••••••••  (oculta)"
-            cred.config(text=f"Personal: profesor · comite · servicios\nContraseña: {pwd}\n\n"
+            claves = "\n".join(f"{u}: {sec.get(f'CLAVE_{u.upper()}', '—') if estado['ver_pwd'] else '••••••••'}"
+                                for u in USUARIOS)
+            cred.config(text=f"Personal (una contraseña distinta para cada uno):\n{claves}\n\n"
                              "Alumnos de prueba: 99660002 a 99660051\nNIP: últimos 4 dígitos al revés\n"
                              "(99660002 → 2000)")
 

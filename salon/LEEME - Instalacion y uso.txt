@@ -51,7 +51,8 @@ REQUISITOS
   3. Espera a que «Servidor» y «WhatsApp» se pongan en verde.
   4. Presiona «Abrir panel del profesor».
      - Entra con el usuario: profesor
-     - La contraseña la ves con el botón «Mostrar / ocultar contraseña» (te pide la de administrador).
+     - Su contraseña la ves con el botón «Mostrar / ocultar contraseña» (te pide la de administrador).
+       Cada usuario (profesor, comite, servicios y admin) tiene una contraseña distinta.
      - Abre la conferencia «Renueva TI: así automatizamos tus créditos del Congreso».
      - Proyecta el QR en la pantalla del salón.
   5. Los alumnos (conectados al MISMO Wi-Fi que la laptop):
@@ -80,10 +81,11 @@ REQUISITOS
       Pide la contraseña de administrador y cierra la sesión del número actual: el dispositivo desaparece
       de ese celular. Después muestra un QR nuevo para vincular otro número.
   Verificar integridad
-      Revisa que nadie haya alterado los registros ni la bitácora por fuera de la app.
+      Revisa página por página el archivo cifrado de la base: detecta cualquier cambio o borrado hecho por
+      fuera de la app.
       También está en la página web: Bitácora → «Verificar integridad».
   Contraseña del personal
-      Cambia la contraseña de profesor, comite, servicios y admin.
+      Cambia la contraseña de UN usuario (profesor, comite, servicios o admin). Cada uno tiene la suya.
   Contraseña de administrador
       Cambia tu contraseña de la app.
   Ver registros
@@ -99,7 +101,7 @@ REQUISITOS
   - Sesión de WhatsApp, claves y contraseña del personal: cifradas con AES-256. Para abrirlas hacen falta
     tu contraseña de administrador Y tu cuenta de Windows (DPAPI). Copiarlas a otra computadora no sirve.
   - NIP de los alumnos: se guarda como huella de un solo sentido; nadie puede verlo.
-  - Cada registro lleva un sello y la bitácora va encadenada: «Verificar integridad» detecta alteraciones.
+  - SQLCipher protege cada página del archivo con un HMAC: «Verificar integridad» detecta cualquier cambio.
   - La bitácora anota quién cambia y quién CONSULTA datos personales.
   - Límite de intentos: contraseña de administrador (5 → bloqueo de 5 min), inicio de sesión del personal
     y NIP de los alumnos.

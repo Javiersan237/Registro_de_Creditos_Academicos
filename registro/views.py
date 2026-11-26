@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -97,6 +97,15 @@ def _svg_qr(texto):
     return buf.getvalue().decode()
 
 
+def conferencia_del_profesor(request, pk):
+    """La conferencia, solo si está asignada a este profesor (el superusuario ve todas). Si es de otro: 404,
+    para no revelar siquiera que existe."""
+    c = get_object_or_404(Conferencia, pk=pk)
+    if not request.user.is_superuser and c.profesor_id != request.user.pk:
+        raise Http404("Esta conferencia está asignada a otro profesor.")
+    return c
+
+
 def _base_url(request):
     # Versión del salón: el lanzador fija la dirección de la laptop en la red (URL_PUBLICA), para que el QR
     # funcione en los celulares aunque el profesor abra el panel como «localhost».
@@ -105,14 +114,14 @@ def _base_url(request):
 
 @rol_requerido(GRUPO_PROFESOR)
 def profesor_panel(request, pk):
-    c = get_object_or_404(Conferencia, pk=pk)
-    if not request.user.is_superuser and c.profesor_id != request.user.pk:
-        return HttpResponseForbidden("Esta conferencia está asignada a otro profesor.")
+    c = conferencia_del_profesor(request, pk)
     base = _base_url(request)
-    # FR-02: el paquete completo, un QR firmado por cada minuto de la ventana.
-    # Va dentro de la página para que siga funcionando si la laptop pierde internet.
+    # FR-02: un QR firmado por cada minuto que FALTA de la ventana (los pasados ya no se muestran; dibujar todos
+    # tardaba 8 s con 960 QR). Van dentro de la página para que siga funcionando si la laptop pierde internet.
+    # No se guardan en ningún lado: viven solo en la página abierta y desaparecen al cerrarla.
+    desde = firma.minuto_actual() - 1   # 1 min de margen por si el reloj del navegador va atrasado
     qrs = [{"m": m, "url": f"{base}/app/?t={tok}", "svg": _svg_qr(f"{base}/app/?t={tok}")}
-           for m, tok in firma.paquete_qr(c)]
+           for m, tok in firma.paquete_qr(c) if m >= desde]
     return render(request, "registro/profesor_panel.html", {
         "c": c, "qrs_json": json.dumps(qrs), "total_qr": len(qrs),
         "inicio": firma.minuto_de(c.inicio_dt()), "cierre": firma.minuto_de(c.cierre_dt()),
@@ -121,7 +130,7 @@ def profesor_panel(request, pk):
 
 @rol_requerido(GRUPO_PROFESOR)
 def profesor_estado(request, pk):
-    c = get_object_or_404(Conferencia, pk=pk)
+    c = conferencia_del_profesor(request, pk)
     qs = c.registros.all()
     return JsonResponse({
         "recibidos": qs.count(),
@@ -135,7 +144,7 @@ def profesor_estado(request, pk):
 @require_POST
 @rol_requerido(GRUPO_PROFESOR)
 def profesor_asistido(request, pk):
-    c = get_object_or_404(Conferencia, pk=pk)
+    c = conferencia_del_profesor(request, pk)
     try:
         r = servicios.registrar_asistido(conferencia=c, no_control=request.POST.get("no_control"),
                                          motivo=request.POST.get("motivo"), usuario=request.user)
@@ -152,7 +161,7 @@ def profesor_asistido(request, pk):
 @rol_requerido(GRUPO_PROFESOR)
 def profesor_sincronizar(request, pk):
     """FR-24 (modo B): sube al servidor central los registros guardados en la laptop."""
-    c = get_object_or_404(Conferencia, pk=pk)
+    c = conferencia_del_profesor(request, pk)
     if not settings.MODO_LOCAL or not settings.CENTRAL_URL:
         messages.info(request, "Estás conectado al servidor central: los registros ya llegan directo. "
                                "No hay nada que sincronizar.")
@@ -195,9 +204,9 @@ def comite(request):
         c.save()
         for i, (texto, opciones, correcta) in enumerate(form.cleaned_data["preguntas"], 1):
             Pregunta.objects.create(conferencia=c, orden=i, texto=texto, opciones=opciones, correcta=correcta)
-        Bitacora.registrar(request.user, "Alta de conferencia", c,
-                           f"{len(form.cleaned_data['preguntas'])} preguntas, {firma.paquete_qr(c).__len__()} QR")
-        messages.success(request, f"Conferencia guardada. Se generaron {len(firma.paquete_qr(c))} QR firmados "
+        n_qr = len(firma.minutos_de_ventana(c))
+        Bitacora.registrar(request.user, "Alta de conferencia", c, f"{len(form.cleaned_data['preguntas'])} preguntas, {n_qr} QR")
+        messages.success(request, f"Conferencia guardada. Se generaron {n_qr} QR firmados "
                                   "(uno por minuto) y el paquete ya está disponible para los celulares.")
         return redirect("comite")
     conferencias = Conferencia.objects.annotate(n_reg=Count("registros"), n_preg=Count("preguntas", distinct=True))
@@ -346,7 +355,7 @@ def avisos(request):
     consulta(request, "avisos a alumnos", "Teléfonos y mensajes")
     if request.method == "POST":
         n = notificaciones.reintentar_errores()
-        messages.info(request, f"Se reintentaron {n} avisos con error o pendientes.")
+        messages.info(request, f"Se reintentaron {n} avisos (con error o pendientes de hace más de 10 min).")
         return redirect("avisos")
     return render(request, "registro/avisos.html", {
         "avisos": Aviso.objects.select_related("alumno")[:150], "wa": notificaciones.estado_whatsapp(),

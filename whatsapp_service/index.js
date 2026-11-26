@@ -85,14 +85,14 @@ async function reiniciarCliente(motivo) {
 }
 /* 24 nov 2026: «Conectado sin aviso ready» = podía ENVIAR pero no RECIBIR. whatsapp-web.js pone sus escuchas de
    mensajes (attachEventListeners) justo antes de emitir «ready»; si «ready» no llega, esas escuchas no existen.
-   Ahora una marca dentro de la página (window.__puenteEscucha) dice si las escuchas están puestas. Se escribe al
+   Ahora una marca dentro de la página (window.__escuchasListas) dice si las escuchas están puestas. Se escribe al
    llegar «ready» o al completarlas a mano, y desaparece sola si la página de WhatsApp Web se recarga. */
 async function enPagina(fn, porDefecto) {
   try { return await Promise.race([cliente.pupPage.evaluate(fn), new Promise(r => setTimeout(() => r(porDefecto), 10000))]); }
   catch (e) { return porDefecto; }
 }
-const escuchando = () => enPagina(() => !!window.__puenteEscucha, false);
-const marcarEscucha = () => enPagina(() => { window.__puenteEscucha = Date.now(); return true; }, false);
+const escuchando = () => enPagina(() => !!window.__escuchasListas, false);
+const marcarEscucha = () => enPagina(() => { window.__escuchasListas = Date.now(); return true; }, false);
 let reparando = false;
 async function completarEscuchas() {
   // Conectado pero sin escuchas: se termina lo que faltó (info + escuchas) sin reiniciar. Solo si las utilidades
@@ -175,6 +175,20 @@ cliente.on('disconnected', r => {
 });
 
 
+// Extensión local opcional, FUERA del repositorio (herramientas personales de quien opera la computadora).
+// WHATSAPP_EXTENSION=<ruta a un .js> que exporta (ctx) => {}: puede escuchar eventos del cliente y agregar rutas
+// (protegidas con el mismo token). Sin la variable no se carga nada.
+const rutasExtra = {};
+if (process.env.WHATSAPP_EXTENSION) {
+  try {
+    require(path.resolve(process.env.WHATSAPP_EXTENSION))({
+      cliente, rutas: rutasExtra, responder, LADA, MessageMedia, enPagina, escuchando, completarEscuchas,
+      estaListo: () => listo, detalle: () => detalle,
+    });
+    console.log('[WhatsApp] Extensión local cargada: ' + process.env.WHATSAPP_EXTENSION);
+  } catch (e) { console.error('[WhatsApp] No se pudo cargar la extensión local:', e.message); }
+}
+
 async function enviar(telefono, mensaje) {
   const digitos = String(telefono || '').replace(/\D/g, '');
   if (digitos.length !== 10) throw Object.assign(new Error('El teléfono debe tener 10 dígitos'), { status: 400 });
@@ -212,6 +226,8 @@ const servidor = http.createServer((req, res) => {
   }
   if (req.headers['x-token'] !== TOKEN) return responder(res, 401, { ok: false, error: 'Token inválido' });
   if (req.method === 'GET' && req.url === '/estado') return responder(res, 200, { listo, detalle });
+  const extra = rutasExtra[req.method + ' ' + req.url];
+  if (extra) return extra(req, res);
   if (req.method === 'POST' && req.url === '/apagar') {   // cierre ordenado: guarda la sesión antes de salir
     responder(res, 200, { ok: true });
     console.log('[WhatsApp] Apagando de forma ordenada…');

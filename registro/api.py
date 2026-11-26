@@ -3,7 +3,6 @@
 Las rutas del alumno no usan sesión: se protegen con el QR firmado y, para
 consultar el estado, con un código de 6 dígitos enviado al correo (FR-16).
 """
-import hashlib
 import json
 import uuid as uuidlib
 from datetime import timedelta
@@ -17,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from . import firma, notificaciones, validacion
-from .models import Alumno, CodigoConsulta, Configuracion, Conferencia, Registro
+from .models import CodigoConsulta, Configuracion, Conferencia, Registro
 from .seguridad import limitar
 from .servicios import ErrorRegistro, buscar_alumno, registrar_por_qr, verificar_nip
 
@@ -55,12 +54,11 @@ def conferencias_activas(request):
 @require_GET
 def paquete(request, pk):
     """Paquete de la conferencia para usar sin internet (FR-22).
-    No incluye respuestas correctas ni la clave de firma. El padrón va como
-    hash del número de control → iniciales, solo para confirmar identidad (FR-28)."""
+    No incluye respuestas correctas, ni la clave de firma, ni datos de alumnos: antes llevaba el padrón como
+    hash del número de control, pero 8 dígitos se adivinan en segundos. Sin internet el alumno no ve su nombre
+    parcial; su NIP se verifica en el servidor al sincronizar."""
     c = get_object_or_404(Conferencia, pk=pk)
     cfg = Configuracion.actual()
-    padron = {hashlib.sha256(a.no_control.encode()).hexdigest()[:16]: a.nombre_parcial()
-              for a in Alumno.objects.filter(carrera__in=c.carreras_lista)}
     preguntas = list(c.preguntas.all())
     return JsonResponse({
         "id": c.pk, "nombre": c.nombre, "lugar": c.lugar, "fecha": f"{c.fecha:%d/%m/%Y}",
@@ -69,7 +67,7 @@ def paquete(request, pk):
         "preguntas": [{"texto": p.texto, "opciones": p.opciones} for p in preguntas],
         # D-13: la app muestra cuánto falta y no deja enviar antes del tiempo mínimo (RN-15)
         "tiempo_minimo_seg": validacion.tiempo_minimo(len(preguntas), cfg),
-        "padron": padron, "descargado": timezone.now().isoformat(),
+        "descargado": timezone.now().isoformat(),
     })
 
 

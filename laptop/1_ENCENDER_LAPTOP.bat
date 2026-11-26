@@ -22,7 +22,7 @@ echo   Direccion de esta laptop (la que empieza con 192.168, 10. o 172.20):
 for /f "tokens=2 delims=:" %%i in ('ipconfig ^| findstr /c:"IPv4"') do for /f "tokens=1" %%j in ("%%i") do echo      http://%%j:8000/login/
 echo.
 echo   Abre ESA direccion en el navegador de la laptop (no 127.0.0.1),
-echo   entra como  profesor / (contraseña retirada)  y abre la conferencia de hoy.
+echo   entra como  profesor  (con su contraseña) y abre la conferencia de hoy.
 echo   Si Windows pregunta por el firewall: "Permitir acceso".
 echo   Para apagar: cierra esta ventana o presiona Ctrl+C.
 echo  =====================================================================

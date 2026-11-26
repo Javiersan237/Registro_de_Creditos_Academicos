@@ -18,12 +18,6 @@
       const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
     }));
 
-  async function sha16(texto) {
-    if (!(crypto.subtle && crypto.subtle.digest)) return null;   // solo en HTTPS
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
-  }
-
   function toast(t) {
     const e = $('#toast'); e.textContent = t; e.style.display = 'block';
     clearTimeout(toast.h); toast.h = setTimeout(() => e.style.display = 'none', 4000);
@@ -147,15 +141,11 @@
         return confirmar(j.nombre_parcial);
       } catch (e) { /* se cayó la red justo ahora: seguimos sin internet */ }
     }
-    const h = await sha16(nc);
-    if (h === null) return confirmar(null);
-    const parcial = st.paquete && st.paquete.padron[h];
-    if (!parcial) return errA2('No encontramos ese número en los datos guardados de esta conferencia. Revisa que esté bien escrito; si es correcto, acude con el profesor.');
-    confirmar(parcial);
+    // Sin internet: el celular no tiene datos de alumnos; el NIP se verifica en el servidor al sincronizar.
+    iniciarCuestionario();
   };
 
   function confirmar(parcial) {
-    if (!parcial) { return iniciarCuestionario(); }
     $('#a2hola').textContent = 'Hola, ' + parcial;
     $('#a2form').style.display = 'none'; $('#a2next').style.display = 'none';
     $('#a2confirm').style.display = '';

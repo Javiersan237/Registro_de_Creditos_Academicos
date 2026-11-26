@@ -2,10 +2,10 @@
 {% block title %}Bitácora{% endblock %}
 {% block bartitle %}Bitácora (FR-18){% endblock %}
 {% block content %}
-<p class="mut" style="margin-bottom:10px">Quién validó, envió, exportó o marcó como cargado cada lote, y cuándo. Cada entrada va encadenada con la anterior y cada registro de asistencia lleva un sello: si alguien los cambia fuera de la app, la verificación lo detecta.</p>
+<p class="mut" style="margin-bottom:10px">Quién validó, envió, exportó o marcó como cargado cada lote, y cuándo. «Verificar integridad» revisa que nadie haya cambiado los datos por fuera de la app: en la base normal detecta registros o entradas <b>cambiados</b> (no detecta que se borre un registro completo ni las últimas entradas); en la base cifrada de la laptop del salón revisa todo el archivo, borrados incluidos.</p>
 <form method="post" style="margin-bottom:12px">{% csrf_token %}<button class="btn sm" type="submit">Verificar integridad</button></form>
 {% if revision %}
- {% if revision.ok %}<div class="msg ok" style="margin-bottom:12px"><b>Sin alteraciones.</b> {{ revision.registros }} registros y {{ revision.bitacora }} entradas de bitácora revisados{% if revision.sin_sello %} ({{ revision.sin_sello }} registros anteriores sin sello){% endif %}.</div>
+ {% if revision.ok %}<div class="msg ok" style="margin-bottom:12px"><b>Sin alteraciones.</b> {% if revision.cifrada %}Se revisó todo el archivo cifrado ({{ revision.registros }} registros, {{ revision.bitacora }} entradas de bitácora).{% else %}{{ revision.registros }} registros y {{ revision.bitacora }} entradas de bitácora revisados{% if revision.sin_sello %} ({{ revision.sin_sello }} registros anteriores sin sello){% endif %}. Recuerda: no detecta registros borrados completos.{% endif %}</div>
  {% else %}<div class="msg err" style="margin-bottom:12px"><b>Se detectaron cambios hechos fuera de la app:</b><ul style="margin:6px 0 0 18px">{% for p in revision.problemas|slice:":30" %}<li>{{ p }}</li>{% endfor %}</ul></div>{% endif %}
 {% endif %}
 <div class="scroll"><table style="font-size:13px">

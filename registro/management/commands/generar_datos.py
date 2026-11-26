@@ -1,4 +1,9 @@
-"""Crea datos simulados para probar el prototipo (la guía prohíbe datos reales).
+"""SOLO PARA PRUEBAS. Crea datos simulados para ver cómo funciona el prototipo (la guía prohíbe datos reales).
+
+  ⚠ Este comando NO es parte del uso diario del sistema. Deja la base en un «estado de fábrica» de demostración:
+    reemplaza usuarios, padrón, conferencias de ejemplo e historial, y BORRA los avisos registrados.
+    Se puede borrar en cualquier momento, y se recomienda borrarlo (o no volver a correrlo) cuando se use el
+    prototipo con datos propios, para que no deje datos inconsistentes.
 
   python manage.py generar_datos
   python manage.py generar_datos --telefono 4881234567 --correo tu_correo@matehuala.tecnm.mx
@@ -6,12 +11,16 @@
 --inicio/--fin fijan el horario de la conferencia de hoy (por ejemplo, --inicio 07:30 --fin 15:00 para
 dejarla abierta toda la jornada de pruebas); sin ellos empieza hace 10 minutos y dura 90.
 --telefono/--correo se asignan SOLO al alumno de prueba 99660001 para recibir los avisos.
+Contraseñas: cada usuario tiene la suya (profesor, comite, servicios y admin). Se toman de CLAVE_PROFESOR,
+CLAVE_COMITE, CLAVE_SERVICIOS y CLAVE_ADMIN (entorno o .env); la que falte se genera al azar y se muestra al final.
+La de admin (superusuario) se genera mucho más larga que las del personal.
 El NIP del alumno de prueba es 1234 (o el de --nip); el de los demás son los 4 últimos dígitos de su
 número de control al revés (99660002 -> 2000).
 Los demás alumnos usan correos @ejemplo.test (dominio reservado, no se entregan) y sin teléfono.
 """
 import os
 import random
+import secrets
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import Group, User
@@ -38,6 +47,13 @@ PREGUNTAS_ENERGIA = [
 ]
 
 
+def clave_al_azar(admin=False):
+    """Personal: «Tec-» + 11 caracteres. Admin (superusuario): 32 caracteres, muy distinta a las del personal."""
+    if admin:
+        return secrets.token_urlsafe(24)
+    return "Tec-" + secrets.token_urlsafe(8).replace("-", "x").replace("_", "y")
+
+
 class Command(BaseCommand):
     help = "Genera padrón, usuarios, conferencias y registros simulados."
 
@@ -49,7 +65,6 @@ class Command(BaseCommand):
                             help="Nombre de ejemplo del profesor designado (o DEMO_DOCENTE en .env)")
         parser.add_argument("--grupo", default=os.environ.get("DEMO_GRUPO", "A"),
                             help="Grupo de ejemplo del alumno de prueba (o DEMO_GRUPO en .env)")
-        parser.add_argument("--password", default="(contraseña retirada)", help="Contraseña de los usuarios de demostración")
         parser.add_argument("--alumnos", type=int, default=60)
         parser.add_argument("--inicio", default="", help="Hora de inicio HH:MM de la conferencia de hoy")
         parser.add_argument("--fin", default="", help="Hora de fin HH:MM de la conferencia de hoy")
@@ -59,7 +74,13 @@ class Command(BaseCommand):
         random.seed(2026)
         Configuracion.actual()
 
-        # Roles y usuarios (NFR-07)
+        # Roles y usuarios (NFR-07): una contraseña distinta por usuario
+        contrasenas, generadas = {}, []
+        for usuario in ("profesor", "comite", "servicios", "admin"):
+            contrasenas[usuario] = os.environ.get(f"CLAVE_{usuario.upper()}", "")
+            if not contrasenas[usuario]:
+                contrasenas[usuario] = clave_al_azar(admin=usuario == "admin")
+                generadas.append(usuario)
         grupos = {n: Group.objects.get_or_create(name=n)[0] for n in (GRUPO_COMITE, GRUPO_PROFESOR, GRUPO_SERVICIOS)}
         usuarios = {}
         for username, nombre, grupo in [("comite", "Comité Demo", GRUPO_COMITE),
@@ -67,13 +88,13 @@ class Command(BaseCommand):
                                          ("servicios", "Servicios Escolares Demo", GRUPO_SERVICIOS)]:
             u, _ = User.objects.get_or_create(username=username)
             u.first_name = nombre
-            u.set_password(o["password"])
+            u.set_password(contrasenas[username])
             u.save()
             u.groups.set([grupos[grupo]])
             usuarios[username] = u
         admin, _ = User.objects.get_or_create(username="admin", defaults={"is_staff": True, "is_superuser": True})
         admin.is_staff = admin.is_superuser = True
-        admin.set_password(o["password"])
+        admin.set_password(contrasenas["admin"])
         admin.save()
 
         # Padrón simulado (FR-03)
@@ -146,7 +167,9 @@ class Command(BaseCommand):
             Aviso.objects.all().delete()  # los avisos del historial simulado no se envían
 
         self.stdout.write(self.style.SUCCESS("Datos simulados listos."))
-        self.stdout.write(f"  Usuarios: comite, profesor, servicios, admin · contraseña: {o['password']}")
+        self.stdout.write("  Usuarios: profesor, comite, servicios y admin, cada uno con su contraseña")
+        for usuario in generadas:   # solo las generadas aquí; las que vienen del entorno no se escriben en ningún log
+            self.stdout.write(f"    {usuario}: {contrasenas[usuario]}")
         self.stdout.write(f"  Alumnos: {Alumno.objects.count()} (prueba: 99660001 -> {prueba.correo} / {prueba.telefono or 'sin teléfono'})")
         self.stdout.write(f"  NIP del alumno de prueba: {o['nip']} · demás alumnos: 4 últimos dígitos del número al revés")
         self.stdout.write(f"  Profesor designado (ejemplo): {o['docente']} · grupo del alumno de prueba: {prueba.grupo}")

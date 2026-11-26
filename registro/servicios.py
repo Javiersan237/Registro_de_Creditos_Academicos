@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from . import firma, notificaciones, validacion
@@ -47,10 +48,13 @@ def verificar_nip(alumno, nip):
         if alumno.nip_intentos or alumno.nip_bloqueado_hasta:
             Alumno.objects.filter(pk=alumno.pk).update(nip_intentos=0, nip_bloqueado_hasta=None)
         return
-    intentos, bloqueo = alumno.nip_intentos + 1, None
-    if intentos >= settings.NIP_MAX_INTENTOS:
-        intentos, bloqueo = 0, ahora + timedelta(minutes=settings.NIP_BLOQUEO_MIN)
-    Alumno.objects.filter(pk=alumno.pk).update(nip_intentos=intentos, nip_bloqueado_hasta=bloqueo)
+    # Se suma DENTRO de la base y se relee: si llegan varios intentos al mismo tiempo, cada uno cuenta
+    # (antes cada petición leía el mismo valor viejo y 20 intentos simultáneos contaban como 1).
+    with transaction.atomic():
+        fila = Alumno.objects.filter(pk=alumno.pk)
+        fila.update(nip_intentos=F("nip_intentos") + 1)
+        if fila.values_list("nip_intentos", flat=True).get() >= settings.NIP_MAX_INTENTOS:
+            fila.update(nip_intentos=0, nip_bloqueado_hasta=ahora + timedelta(minutes=settings.NIP_BLOQUEO_MIN))
     raise ErrorRegistro("El NIP no coincide con ese número de control. Es el NIP de 4 dígitos con el que entras "
                         "al SIIC. Revísalo y vuelve a intentarlo.", 403)
 
@@ -104,7 +108,10 @@ def registrar_por_qr(*, uuid, token, no_control, respuestas, tiempo_seg, captura
         raise ErrorRegistro("Faltan preguntas por responder. Contesta todas antes de enviar.")
 
     minuto_qr = firma.minuto_a_fecha(minuto)
-    valido, motivo = validacion.evaluar(conferencia, minuto_qr, int(tiempo_seg or 0), aciertos, total, False)
+    # La laptop del profesor (modo B) sube después lo que recibió a tiempo: su firma exime la hora de llegada.
+    llegada = None if nip_verificado else timezone.now()
+    valido, motivo = validacion.evaluar(conferencia, minuto_qr, int(tiempo_seg or 0), aciertos, total, False,
+                                        llegada=llegada)
     try:
         with transaction.atomic():
             registro = Registro.objects.create(
@@ -273,8 +280,10 @@ def generar_csv(lote, usuario=None):
     lote.exportaciones += 1
     lote.save(update_fields=["exportaciones"])
     Bitacora.registrar(usuario, "Exportación CSV para el SIIC", lote, f"{len(filas)} filas")
-    # UTF-8 con BOM para que Excel muestre bien los acentos.
-    return "﻿" + salida.getvalue(), []
+    # UTF-8 con BOM para que Excel muestre bien los acentos. En otra codificación (p. ej. cp1252) la marca no
+    # existe y se volvería «?» al inicio del archivo («?folio»), así que solo se pone con UTF-8.
+    bom = "﻿" if settings.EXPORT_CODIFICACION.lower().replace("-", "").replace("_", "") == "utf8" else ""
+    return bom + salida.getvalue(), []
 
 
 # ---------------------------------------------------------------- CU-07

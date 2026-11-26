@@ -2,6 +2,7 @@
 
   python manage.py test registro -v 2
 """
+import io
 import json
 import uuid
 from datetime import timedelta
@@ -9,7 +10,7 @@ from unittest import mock
 
 from django.contrib.auth.models import Group, User
 from django.core import mail
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from . import firma, servicios, validacion
@@ -59,11 +60,12 @@ class Base(TestCase):
             Pregunta.objects.create(conferencia=c, orden=n, texto=f"P{n}", opciones=["a", "b", "c"], correcta=0)
         return c
 
-    def registrar(self, nc="99660001", resp=None, t=150, minuto=None, conf=None, u=None, nip="1234"):
+    def registrar(self, nc="99660001", resp=None, t=150, minuto=None, conf=None, u=None, nip="1234", laptop=False):
+        """laptop=True: como si lo subiera la laptop del profesor (modo B), que ya verificó NIP y hora de llegada."""
         conf = conf or self.conf
         return servicios.registrar_por_qr(
             uuid=u or uuid.uuid4(), token=firma.firmar(conf, minuto or self.m), no_control=nc, nip=nip,
-            respuestas=resp if resp is not None else [0, 0, 0, 0, 0], tiempo_seg=t)
+            respuestas=resp if resp is not None else [0, 0, 0, 0, 0], tiempo_seg=t, nip_verificado=laptop)
 
 
 class TC01_Conferencia(Base):
@@ -280,7 +282,7 @@ class TC10_Credito(Base):
         otra = self._conf("Ayer", ayer.replace(hour=10, minute=0), ayer.replace(hour=11, minute=0))
         self.registrar("99660001")
         self.registrar("99660002")
-        self.registrar("99660001", conf=otra, minuto=firma.minuto_de(otra.inicio_dt()) + 5)
+        self.registrar("99660001", conf=otra, minuto=firma.minuto_de(otra.inicio_dt()) + 5, laptop=True)  # llegó ayer
         lote = servicios.enviar_validos(self.comite)
         filas = {f["no_control"]: f for f in servicios.filas_csv(lote)}
         self.assertEqual(filas["99660002"]["credito"], "NO")
@@ -544,3 +546,87 @@ class TS03_Integridad(Base):
         c.get("/comite/tablero/")   # recargar no duplica
         self.assertEqual(Bitacora.objects.filter(accion="Consulta: tablero por carrera").count(), 1)
 
+
+
+class TS04_Correcciones(Base):
+    """Correcciones de la auditoría del 25 nov 2026."""
+
+    def test_registro_que_llega_tarde_no_es_valido(self):
+        """Una foto del QR (o un registro sin internet) que llega después del cierre + margen ya no vale."""
+        ayer = timezone.localtime() - timedelta(days=1)
+        otra = self._conf("Ayer", ayer.replace(hour=10, minute=0), ayer.replace(hour=11, minute=0))
+        minuto = firma.minuto_de(otra.inicio_dt()) + 5   # QR auténtico, tomado dentro del horario
+        r, *_ = self.registrar("99660001", conf=otra, minuto=minuto)
+        self.assertFalse(r.valido)
+        self.assertEqual(r.motivo, validacion.MOTIVO_TARDE)
+        r2, *_ = self.registrar("99660002", conf=otra, minuto=minuto, laptop=True)   # la laptop lo recibió a tiempo
+        self.assertTrue(r2.valido)
+        # Dentro del margen sí vale: cierre (fin + tolerancia) + margen de envío
+        limite = validacion.limite_llegada(otra, self.cfg)
+        self.assertEqual(validacion.evaluar(otra, otra.inicio_dt(), 150, 5, 5, False, llegada=limite), (True, ""))
+
+    def test_profesor_no_toca_conferencias_de_otro(self):
+        otro = self._user("profesor2", GRUPO_PROFESOR)
+        c = Client()
+        c.force_login(otro)
+        pk = self.conf.pk
+        self.assertEqual(c.get(f"/profesor/{pk}/").status_code, 404)
+        self.assertEqual(c.get(f"/profesor/{pk}/estado").status_code, 404)
+        self.assertEqual(c.post(f"/profesor/{pk}/asistido", {"no_control": "99660001", "motivo": "x"}).status_code, 404)
+        self.assertEqual(c.post(f"/profesor/{pk}/sincronizar").status_code, 404)
+        self.assertEqual(Registro.objects.count(), 0)
+        c.force_login(self.profe)   # el dueño sí
+        self.assertEqual(c.get(f"/profesor/{pk}/estado").status_code, 200)
+
+    def test_intentos_de_nip_al_mismo_tiempo_cuentan_todos(self):
+        """Dos peticiones que leyeron el mismo alumno (contador en 0) deben sumar 2, no 1."""
+        a1, a2 = Alumno.objects.get(pk="99660001"), Alumno.objects.get(pk="99660001")
+        for a in (a1, a2):
+            with self.assertRaises(servicios.ErrorRegistro):
+                servicios.verificar_nip(a, "0000")
+        self.assertEqual(Alumno.objects.get(pk="99660001").nip_intentos, 2)
+
+    def test_reintentar_no_repite_pendientes_recientes(self):
+        from .notificaciones import reintentar_errores
+        a = Alumno.objects.get(pk="99660001")
+        nuevo = dict(alumno=a, canal=Aviso.WHATSAPP, tipo="t", destino=a.telefono, asunto="a", contenido="c")
+        Aviso.objects.create(estado=Aviso.PENDIENTE, **nuevo)                 # sigue en la fila: no se toca
+        viejo = Aviso.objects.create(estado=Aviso.PENDIENTE, **nuevo)
+        Aviso.objects.filter(pk=viejo.pk).update(creado=timezone.now() - timedelta(minutes=11))
+        Aviso.objects.create(estado=Aviso.ERROR, **nuevo)
+        self.assertEqual(reintentar_errores(), 2)
+
+    def test_paquete_sin_datos_de_alumnos(self):
+        j = self.client.get(f"/api/paquete/{self.conf.pk}").json()
+        self.assertNotIn("padron", j)
+        self.assertNotIn("99660001", json.dumps(j))
+
+    @override_settings(EXPORT_CODIFICACION="cp1252")
+    def test_csv_sin_marca_utf8_en_otra_codificacion(self):
+        self.registrar("99660001")
+        contenido, _ = servicios.generar_csv(servicios.enviar_validos(self.comite), self.se)
+        self.assertTrue(contenido.startswith("folio,"))
+
+    def test_panel_solo_qr_desde_el_minuto_actual(self):
+        c = Client()
+        c.force_login(self.profe)
+        r = c.get(f"/profesor/{self.conf.pk}/")
+        faltan = firma.minuto_de(self.conf.cierre_dt()) - firma.minuto_actual() + 2
+        self.assertLessEqual(r.context["total_qr"], faltan)
+        self.assertLess(r.context["total_qr"], len(firma.paquete_qr(self.conf)))
+
+
+class TS05_Respaldo(TransactionTestCase):
+    """NFR-08: respaldar y restaurar con la conexión de Django, en <carpeta de datos>/backups."""
+
+    def test_respaldar_y_restaurar(self):
+        import tempfile
+        from pathlib import Path
+        from django.core.management import call_command
+        with tempfile.TemporaryDirectory() as tmp, override_settings(DATOS_DIR=Path(tmp)):
+            Bitacora.objects.create(accion="antes", objeto="x")
+            call_command("respaldar", stdout=io.StringIO())
+            respaldo = next((Path(tmp) / "backups").glob("respaldo_*.sqlite3"))
+            Bitacora.objects.create(accion="después", objeto="x")
+            call_command("restaurar", respaldo.name, stdout=io.StringIO())
+            self.assertEqual(list(Bitacora.objects.values_list("accion", flat=True)), ["antes"])

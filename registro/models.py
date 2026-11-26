@@ -29,6 +29,10 @@ class Configuracion(models.Model):
 
     tolerancia_min = models.PositiveIntegerField(
         "Tolerancia después del fin (min)", default=15, help_text="RN-11")
+    margen_envio_min = models.PositiveIntegerField(
+        "Margen para que llegue el registro (min)", default=10,
+        help_text="Minutos después del cierre del QR (fin + tolerancia) en que todavía se acepta un registro que "
+                  "llega al servidor. Después se marca no válido, también los hechos sin internet.")
     porcentaje_minimo = models.PositiveIntegerField(
         "Aciertos mínimos (%)", default=50, validators=[MaxValueValidator(100)], help_text="RN-14")
     segundos_por_pregunta = models.PositiveIntegerField(
@@ -255,8 +259,10 @@ class Registro(models.Model):
         if not self.folio:
             self.folio = f"RT-{timezone.localdate():%y}-{self.pk:05d}"
             super().save(update_fields=["folio"])
-        # Sello de integridad, calculado con los valores tal como quedaron en la base
-        from .integridad import sello_registro
+        # Sello de integridad, calculado con los valores tal como quedaron en la base (no en la base cifrada)
+        from .integridad import base_cifrada, sello_registro
+        if base_cifrada():
+            return
         guardado = Registro.objects.get(pk=self.pk)
         self.sello = sello_registro(guardado)
         Registro.objects.filter(pk=self.pk).update(sello=self.sello)
@@ -324,7 +330,9 @@ class Bitacora(models.Model):
             usuario = None
         from django.db import transaction
 
-        from .integridad import huella_bitacora
+        from .integridad import base_cifrada, huella_bitacora
+        if base_cifrada():   # SQLCipher ya protege el archivo completo: sin cadena
+            return cls.objects.create(usuario=usuario, accion=accion[:60], objeto=str(objeto)[:120], detalle=detalle)
         with transaction.atomic():
             ultima = cls.objects.order_by("-pk").values_list("huella", flat=True).first() or ""
             b = cls.objects.create(usuario=usuario, accion=accion[:60], objeto=str(objeto)[:120], detalle=detalle,

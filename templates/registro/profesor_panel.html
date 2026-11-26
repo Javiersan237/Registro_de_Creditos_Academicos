@@ -8,7 +8,7 @@
   <h3>Muestra este QR</h3>
   <div id="qr"></div>
   <p class="mut" id="qrt">Cargando…</p>
-  <p class="mut" style="text-align:center;font-size:12px">QR firmado con vigencia de 1 minuto · {{ total_qr }} QR en el paquete</p>
+  <p class="mut" style="text-align:center;font-size:12px">QR firmado con vigencia de 1 minuto · {{ total_qr }} QR restantes</p>
   <a id="qrlink" href="#" target="_blank" class="mut" style="font-size:12px">Abrir el registro en este dispositivo</a>
  </div>
  <div style="flex:1.6;display:flex;flex-direction:column;gap:12px">
@@ -44,7 +44,9 @@ function tick(){
   const box = document.getElementById('qr'), t = document.getElementById('qrt'), a = document.getElementById('qrlink');
   if (m < INICIO) { box.innerHTML = '<p class="msg info">El registro abre a las ' + hhmm(INICIO) + ' h.</p>'; t.textContent = 'Aún no inicia'; a.style.display='none'; return; }
   if (m > CIERRE) { box.innerHTML = '<p class="msg err">Registro cerrado desde las ' + hhmm(CIERRE+1) + ' h.</p>'; t.textContent = 'Cerrado'; a.style.display='none'; return; }
+  for (const k in porMinuto) if (+k < m) delete porMinuto[k];   // los QR que ya pasaron se borran de la memoria
   const q = porMinuto[m];
+  if (!q) { box.innerHTML = '<p class="msg info">Recarga la página para ver el QR de este minuto (el reloj de este equipo no coincide con el del servidor).</p>'; a.style.display='none'; return; }
   if (box.dataset.m != m) { box.innerHTML = q.svg; box.dataset.m = m; a.href = q.url; a.style.display=''; }
   t.textContent = 'Cambia en 0:' + String(seg % 60).padStart(2,'0') + ' · cierra a las ' + hhmm(CIERRE+1) + ' h';
 }

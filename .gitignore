@@ -37,3 +37,11 @@ whatsapp_service/.wwebjs_cache_viejo*/
 salon/dist/
 salon/build/
 whatsapp_service/index.js.antes_*
+
+# Logos e íconos de la institución (TecNM / ITMH): se usan en la app pero NO se publican en el repositorio.
+# Ponlos a mano en estas rutas antes de correr o construir la app (ver README).
+static/img/tecnm.png
+static/img/itmatehuala.png
+static/img/icon-192.png
+static/img/icon-512.png
+salon/icono.ico

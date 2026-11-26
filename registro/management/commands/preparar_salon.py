@@ -51,12 +51,10 @@ class Command(BaseCommand):
         parser.add_argument("--sin-datos", action="store_true",
                             help="No regenerar los datos simulados (solo la conferencia del salón)")
         parser.add_argument("--lugar", default="Salón de clases")
-        parser.add_argument("--password", default="", help="Contraseña de los usuarios del personal")
 
     def handle(self, *args, **o):
-        if not o["sin_datos"]:
-            extra = ["--password", o["password"]] if o["password"] else []
-            call_command("generar_datos", *extra, stdout=self.stdout)
+        if not o["sin_datos"]:   # contraseñas: CLAVE_PROFESOR, CLAVE_COMITE, CLAVE_SERVICIOS y CLAVE_ADMIN
+            call_command("generar_datos", stdout=self.stdout)
 
         from django.contrib.auth.models import User
         ahora = timezone.localtime()

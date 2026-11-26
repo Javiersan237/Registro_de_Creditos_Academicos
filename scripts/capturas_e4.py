@@ -17,7 +17,7 @@ from playwright.sync_api import sync_playwright
 B = "http://127.0.0.1:8000"
 OUT = os.path.join(os.path.dirname(__file__), "..", "evidencias_e4")
 os.makedirs(OUT, exist_ok=True)
-PASS = "(contraseña retirada)"
+# Cada usuario tiene su contraseña (CLAVE_PROFESOR, CLAVE_COMITE, CLAVE_SERVICIOS en el entorno o en .env)
 
 
 def foto(page, nombre, full=False):
@@ -30,7 +30,7 @@ def login(ctx, usuario):
     p = ctx.new_page()
     p.goto(B + "/login/")
     p.fill("#id_username", usuario)
-    p.fill("#id_password", PASS)
+    p.fill("#id_password", os.environ[f"CLAVE_{usuario.upper()}"])
     p.press("#id_password", "Enter")
     p.wait_for_load_state("networkidle")
     return p

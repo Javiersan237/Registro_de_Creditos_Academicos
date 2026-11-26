@@ -1,17 +1,27 @@
-"""Integridad de los datos (versión del salón, 24 nov 2026).
+"""Integridad de los datos.
 
-- Cada registro de asistencia lleva un SELLO: HMAC-SHA256 de sus campos con una clave del servidor.
-  Si alguien abre la base de datos y cambia, por ejemplo, «válido» o las respuestas, el sello ya no coincide.
+Base SIN cifrar (servidor central, PythonAnywhere, PC de desarrollo):
+- Cada registro de asistencia lleva un SELLO: HMAC-SHA256 de sus campos con INTEGRIDAD_KEY.
+  Si alguien abre la base y CAMBIA, por ejemplo, «válido» o las respuestas, el sello ya no coincide.
   El sello no cubre el lote ni la sincronización, que cambian de forma legítima con el flujo normal.
-- La bitácora es una CADENA: cada entrada guarda la huella de la anterior. Borrar, cambiar o intercalar
-  una entrada rompe la cadena desde ese punto.
-Sin la clave (que en la laptop va cifrada en la bóveda) no se puede fabricar un sello válido.
+- La bitácora es una CADENA: cada entrada guarda la huella de la anterior. Cambiar, borrar o intercalar
+  una entrada INTERMEDIA rompe la cadena desde ese punto.
+- LÍMITES (lo que NO detecta): que se BORRE un registro completo, o las ÚLTIMAS entradas de la bitácora; y si
+  INTEGRIDAD_KEY vive en el mismo .env que la base, quien pueda editar la base también puede rehacer los sellos.
+
+Base CIFRADA (laptop del salón, SQLCipher): no se usan sellos ni cadena, porque SQLCipher ya protege TODO el
+archivo con un HMAC por página: cualquier cambio de bytes, incluido un borrado hecho por fuera, se detecta.
+La verificación usa la de SQLCipher (PRAGMA cipher_integrity_check).
 """
 import hashlib
 import hmac
 import json
 
 from django.conf import settings
+
+
+def base_cifrada():
+    return bool(settings.DATABASES["default"].get("CLAVE"))
 
 
 def _clave():
@@ -44,8 +54,17 @@ def huella_bitacora(b, anterior):
 
 
 def verificar():
-    """Revisa todos los sellos y la cadena. Devuelve un resumen con los problemas encontrados."""
+    """Revisa todos los sellos y la cadena (o, con la base cifrada, cada página del archivo).
+    Devuelve un resumen con los problemas encontrados."""
     from .models import Bitacora, Registro
+
+    if base_cifrada():
+        from django.db import connection
+        with connection.cursor() as c:
+            c.execute("PRAGMA cipher_integrity_check")
+            problemas = [f"Archivo de la base: {' '.join(map(str, fila))}" for fila in c.fetchall()]
+        return {"ok": not problemas, "registros": Registro.objects.count(), "sin_sello": 0,
+                "bitacora": Bitacora.objects.count(), "problemas": problemas, "cifrada": True}
 
     problemas, sin_sello = [], 0
     registros = 0
@@ -68,4 +87,4 @@ def verificar():
             problemas.append(f"Bitácora: la entrada #{b.pk} ({b.accion}) fue modificada.")
         anterior = b.huella
     return {"ok": not problemas, "registros": registros, "sin_sello": sin_sello,
-            "bitacora": entradas, "problemas": problemas}
+            "bitacora": entradas, "problemas": problemas, "cifrada": False}

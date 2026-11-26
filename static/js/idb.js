@@ -1,7 +1,7 @@
 /* Renueva TI · almacenamiento local del celular (IndexedDB) y sincronizador.
    Se usa desde la página y desde el Service Worker (FR-22, FR-23, NFR-11).
    Almacenes:
-     paquetes   → datos de cada conferencia descargados antes (cuestionario, ventana, padrón en hash)
+     paquetes   → datos de cada conferencia descargados antes (cuestionario y ventana; sin datos de alumnos)
      pendientes → registros hechos sin internet, en cola de envío
      registros  → registros ya enviados, con su folio y último estado conocido */
 (function (g) {

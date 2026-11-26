@@ -1,11 +1,13 @@
 """NFR-08: restaura un respaldo creado con `respaldar`.
 
-  python manage.py restaurar backups/respaldo_20261116_120000.sqlite3
+  python manage.py restaurar respaldo_20261116_120000.sqlite3      (lo busca en <carpeta de datos>/backups)
+  python manage.py restaurar D:\\otra\\carpeta\\respaldo.sqlite3     (ruta completa, cualquier unidad)
 """
-import sqlite3
+from pathlib import Path
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+
+from registro.respaldo import copiar_base, carpeta_respaldos
 
 
 class Command(BaseCommand):
@@ -15,14 +17,13 @@ class Command(BaseCommand):
         parser.add_argument("archivo")
 
     def handle(self, *args, **o):
-        archivo = settings.BASE_DIR / o["archivo"] if not o["archivo"].startswith(("/", "C:", "c:")) else o["archivo"]
+        archivo = Path(o["archivo"])
+        if not archivo.is_absolute():
+            archivo = carpeta_respaldos() / archivo
+        if not archivo.exists():
+            raise CommandError(f"No existe el respaldo: {archivo}")
         try:
-            origen = sqlite3.connect(f"file:{archivo}?mode=ro", uri=True)
-        except sqlite3.Error as e:
-            raise CommandError(f"No se pudo abrir el respaldo: {e}")
-        destino = sqlite3.connect(settings.DATABASES["default"]["NAME"])
-        with destino:
-            origen.backup(destino)
-        destino.close()
-        origen.close()
+            copiar_base(archivo, hacia_respaldo=False)
+        except Exception as e:   # llave distinta o archivo dañado: la base actual no se toca
+            raise CommandError(f"No se pudo restaurar desde {archivo}: {e}")
         self.stdout.write(self.style.SUCCESS(f"Base restaurada desde {archivo}"))
